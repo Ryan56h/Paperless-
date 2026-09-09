@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --bg-color: #0D0D0D;
+  --surface-color: #111111;
+  --surface-color-2: #1A1A1A;
+  --border-color: #2A2A2A;
+  --text-color: #FFFFFF;
+  --text-muted: #9CA3AF;
+  --text-dim: #6B7280;
+}
+
+:root.light {
+  --bg-color: #F3F4F6;
+  --surface-color: #FFFFFF;
+  --surface-color-2: #F9FAFB;
+  --border-color: #E5E7EB;
+  --text-color: #111827;
+  --text-muted: #4B5563;
+  --text-dim: #9CA3AF;
+}
+
+@theme {
+  --color-brand: #55C244;
+  --color-brand-dark: #3DA832;
+  --color-bg: var(--bg-color);
+  --color-surface: var(--surface-color);
+  --color-surface-2: var(--surface-color-2);
+  --color-border: var(--border-color);
+  --color-text: var(--text-color);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+  --color-success: #55C244;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-zalo: #0068FF;
+  --color-sms: #F59E0B;
+
+  --font-sans: 'Inter', sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Remove all transitions globally */
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track { background: #1A1A1A; }
+  ::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 3px; }
+}
