@@ -22,3 +22,31 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# .NET user files
+*.user
+*.rsuser
+*.suo
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Test results
+TestResults/
+
+# ASP.NET generated files
+project.assets.json
+project.nuget.cache
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+
+# Environment / secrets
+appsettings.Development.json
