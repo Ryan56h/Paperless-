@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace PaperLessApi.Models;
 
-public class Product
+public class Subscription
 {
     [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -16,16 +16,14 @@ public class Product
     public Tenant? Tenant { get; set; }
 
     [Required]
-    [MaxLength(150)]
-    public string Name { get; set; } = string.Empty;
+    public string PlanId { get; set; } = string.Empty;
 
-    [Required]
-    [MaxLength(50)]
-    public string Category { get; set; } = string.Empty;
+    public Plan? Plan { get; set; }
 
-    public long Price { get; set; }
+    public DateTime StartDate { get; set; } = DateTime.UtcNow;
 
-    public bool IsAvailable { get; set; } = true;
+    public DateTime EndDate { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [MaxLength(20)]
+    public string Status { get; set; } = "active";
 }

@@ -1,40 +1,39 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace PaperLessApi.Models;
 
-public class Customer
+public class User
 {
     [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
-    [Required]
-    public string TenantId { get; set; } = string.Empty;
+    public string? TenantId { get; set; }
 
     [JsonIgnore]
     public Tenant? Tenant { get; set; }
 
     [Required]
     [MaxLength(100)]
-    public string Name { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
 
     [Required]
+    [MaxLength(100)]
+    public string Email { get; set; } = string.Empty;
+
     [MaxLength(20)]
     public string Phone { get; set; } = string.Empty;
 
-    public int Points { get; set; } = 0;
+    [Required]
+    public string PasswordHash { get; set; } = string.Empty;
 
+    [Required]
     [MaxLength(20)]
-    public string Tier { get; set; } = "bronze";
+    public string Role { get; set; } = "staff"; // super_admin | owner | manager | staff
 
-    public long TotalSpent { get; set; } = 0;
-
-    public int TotalOrders { get; set; } = 0;
+    public string? BranchId { get; set; }
+    public Branch? Branch { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [JsonIgnore]
-    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 }

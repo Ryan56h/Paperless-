@@ -9,6 +9,11 @@ public class AppDbContext : DbContext
     {
     }
 
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<User> Users => Set<User>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -21,11 +26,15 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Customer>()
-            .HasIndex(c => c.Phone)
+            .HasIndex(c => new { c.TenantId, c.Phone })
             .IsUnique();
 
         modelBuilder.Entity<Voucher>()
-            .HasIndex(v => v.Code)
+            .HasIndex(v => new { v.TenantId, v.Code })
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
             .IsUnique();
     }
 }
