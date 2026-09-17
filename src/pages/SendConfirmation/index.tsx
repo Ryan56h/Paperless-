@@ -46,42 +46,79 @@ export default function SendConfirmation() {
   });
   const [activeSuccessTab, setActiveSuccessTab] = useState<'zalo' | 'sms'>('zalo');
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (draft) {
       const channelLabel = draft.channel === 'zalo' ? 'Zalo' : draft.channel === 'sms' ? 'SMS' : 'Zalo + SMS';
-      setSuccessInfo({
-        phone: draft.phone,
-        customerName: draft.customerName,
-        channelLabel,
-        channel: draft.channel,
-        items: draft.items,
-        total: draft.total,
-        requirePayment: draft.requirePayment ?? true,
-      });
-      setActiveSuccessTab(draft.channel === 'sms' ? 'sms' : 'zalo');
-
-      // Save custom invoice payload to localStorage so CustomerInvoice can display it dynamically
-      const createdInvoice = {
+      
+      const payload = {
         id: invoiceId,
         customerName: draft.customerName,
         customerPhone: draft.phone,
         branch: 'FreshMart Chi nhánh Q1',
         staffName: 'Nguyễn Bảo Trân',
-        items: draft.items,
+        items: draft.items.map(item => ({
+          invoiceId: invoiceId,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        })),
         subtotal: draft.subtotal,
         discount: draft.discount,
         tax: draft.tax,
         total: draft.total,
-        requirePayment: draft.requirePayment ?? true,
-        paymentStatus: (draft.requirePayment ?? true) ? 'unpaid' : 'paid',
-        createdAt: new Date().toISOString(),
+        payStatus: (draft.requirePayment ?? true) ? "unpaid" : "paid",
         sendChannel: draft.channel,
-        sendStatus: 'sent',
+        sendStatus: "sent"
       };
-      localStorage.setItem(`invoice-${invoiceId}`, JSON.stringify(createdInvoice));
+
+      try {
+        // Gửi POST request để lưu hóa đơn vào database thật
+        const response = await fetch('/api/bill', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const rawText = await response.text();
+          let errData;
+          try {
+            errData = JSON.parse(rawText);
+          } catch (e) {
+            // It's probably an HTML error page from ASP.NET Core (500 Internal Server Error)
+            console.error("LỖI RAW TỪ BACKEND:", rawText.substring(0, 1000));
+            throw new Error(`Lỗi server (500). Xem Console F12 để biết chi tiết.\nNội dung: ${rawText.substring(0, 100)}...`);
+          }
+          
+          if (errData && errData.errors) {
+            const errorMessages = Object.entries(errData.errors)
+              .map(([field, msgs]: any) => `${field}: ${msgs.join(', ')}`)
+              .join('\n');
+            throw new Error(`Lỗi dữ liệu (400):\n${errorMessages}`);
+          }
+          throw new Error((errData && errData.message) || 'Lỗi khi lưu vào database');
+        }
+
+        setSuccessInfo({
+          phone: draft.phone,
+          customerName: draft.customerName,
+          channelLabel,
+          channel: draft.channel,
+          items: draft.items,
+          total: draft.total,
+          requirePayment: draft.requirePayment ?? true,
+        });
+        setActiveSuccessTab(draft.channel === 'sms' ? 'sms' : 'zalo');
+
+        sessionStorage.removeItem('invoiceDraft');
+        sessionStorage.removeItem('posOrderDraft');
+      } catch (error) {
+        console.error('Lỗi lưu DB:', error);
+        alert('Không thể lưu vào database! Hãy chắc chắn backend localhost:8080 đang chạy.');
+      }
     }
-    sessionStorage.removeItem('invoiceDraft');
-    sessionStorage.removeItem('posOrderDraft');
   };
 
   if (successInfo) {

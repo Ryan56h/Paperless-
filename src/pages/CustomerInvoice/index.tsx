@@ -65,61 +65,78 @@ function VietQRTransferCard({ total, id }: { total: number; id: string }) {
 export default function CustomerInvoice() {
   const { id } = useParams<{ id: string }>();
 
-  // Look up in localStorage first, then fallback to mock data
-  const localInvoiceRaw = id ? localStorage.getItem(`invoice-${id}`) : null;
-  const localInvoice = localInvoiceRaw ? JSON.parse(localInvoiceRaw) : null;
-  const initialInvoice = localInvoice || (id ? findInvoiceById(id) : null);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<string>('unpaid');
 
-  // Fallback demo invoice
-  const data = initialInvoice ?? {
-    id: id ?? 'PL-DEMO-001',
-    customerName: 'Khách hàng',
-    customerPhone: '09xxxxxxxx',
-    branch: 'Chi nhánh Q1',
-    staffName: 'Nhân viên',
-    items: [
-      { id: '1', name: 'Cà phê sữa đá', quantity: 2, unitPrice: 45000 },
-      { id: '2', name: 'Bánh croissant', quantity: 1, unitPrice: 35000 },
-    ],
-    subtotal: 125000,
-    discount: 0,
-    tax: 12500,
-    total: 137500,
-    createdAt: new Date().toISOString(),
-    sendChannel: 'zalo',
-    sendStatus: 'sent',
-    customerId: 'KH000',
-    requirePayment: true,
-    paymentStatus: 'unpaid',
-  };
-
-  const [paymentStatus, setPaymentStatus] = useState<string>(() => {
-    return data.paymentStatus ?? 'unpaid';
-  });
-
-  // PayOS Webhook Simulator
   useEffect(() => {
-    if (data.requirePayment && paymentStatus === 'unpaid') {
+    if (!id) {
+      setError('Không có mã hóa đơn');
+      setLoading(false);
+      return;
+    }
+
+    // Lấy data từ database backend
+    fetch(`/api/bill/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Không thể tải dữ liệu hóa đơn từ Database');
+        return res.json();
+      })
+      .then((apiData) => {
+        const mappedData = {
+          id: apiData.id || id,
+          customerName: apiData.customerName || 'Khách hàng',
+          customerPhone: apiData.customerPhone || '',
+          branch: apiData.branch || 'Chi nhánh mặc định',
+          items: apiData.items || [], 
+          subtotal: apiData.subtotal || apiData.total || 0,
+          discount: apiData.discount || 0,
+          tax: apiData.tax || 0,
+          total: apiData.total || 0,
+          createdAt: apiData.createdAt || new Date().toISOString(),
+          requirePayment: apiData.payStatus === 'unpaid',
+          paymentStatus: apiData.payStatus || 'unpaid',
+        };
+        
+        setData(mappedData);
+        setPaymentStatus(mappedData.paymentStatus);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id]);
+
+  // Giả lập thanh toán
+  useEffect(() => {
+    if (data?.requirePayment && paymentStatus === 'unpaid') {
       const timer = setTimeout(() => {
         setPaymentStatus('paid');
-
-        // Also update local copy in localStorage
-        if (id) {
-          const stored = localStorage.getItem(`invoice-${id}`);
-          if (stored) {
-            try {
-              const parsed = JSON.parse(stored);
-              parsed.paymentStatus = 'paid';
-              localStorage.setItem(`invoice-${id}`, JSON.stringify(parsed));
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        }
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [paymentStatus, id, data.requirePayment]);
+  }, [paymentStatus, data]);
+
+  if (loading || !data) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+        {error ? (
+          <div className="bg-surface p-6 rounded-2xl shadow-sm text-center border border-border">
+            <p className="text-error font-semibold mb-2">Lỗi tải hóa đơn</p>
+            <p className="text-text-muted text-sm">{error}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mb-4"></div>
+            <p className="text-text-muted text-sm">Đang tải hóa đơn...</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg py-6 px-4">

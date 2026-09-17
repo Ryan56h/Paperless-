@@ -11,6 +11,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Đăng ký Repository và Service (Clean Architecture theo ý bro)
+builder.Services.AddScoped<PaperLessApi.Repositories.IInvoiceRepository, PaperLessApi.Repositories.InvoiceRepository>();
+builder.Services.AddScoped<PaperLessApi.Services.IInvoiceService, PaperLessApi.Services.InvoiceService>();
+
 
 var app = builder.Build();
 

@@ -6,6 +6,7 @@ import CustomerInvoice from './pages/CustomerInvoice';
 import InvoiceLookup from './pages/InvoiceLookup';
 import ManagerDashboard from './pages/ManagerDashboard';
 import LoyaltyVoucher from './pages/LoyaltyVoucher';
+import NfcReceiver from './pages/NfcReceiver';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/staff/invoice/new" element={<CreateInvoice />} />
         <Route path="/staff/invoice/confirm" element={<SendConfirmation />} />
         <Route path="/invoice/:id" element={<CustomerInvoice />} />
+        <Route path="/nhan-hoa-don" element={<NfcReceiver />} />
         <Route path="/lookup" element={<InvoiceLookup />} />
         <Route path="/manager" element={<ManagerDashboard />} />
         <Route path="/manager/loyalty" element={<LoyaltyVoucher />} />
