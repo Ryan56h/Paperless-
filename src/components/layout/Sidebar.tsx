@@ -22,16 +22,18 @@ export default function Sidebar({ role }: SidebarProps) {
   const links = role === 'staff' ? staffLinks : managerLinks;
   
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    if (nextTheme === 'light') {
-      document.documentElement.classList.add('light');
-    } else {
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
     }
   };
 
@@ -44,14 +46,14 @@ export default function Sidebar({ role }: SidebarProps) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#55C244] rounded-md flex items-center justify-center">
-            <span className="text-black text-xs font-black">P+</span>
+          <div className="w-6 h-6 bg-text text-bg rounded flex items-center justify-center">
+            <span className="text-xs font-bold">P</span>
           </div>
-          <span className="font-bold text-text text-sm tracking-wide">
-            Paper<span className="text-[#55C244]">Less+</span>
+          <span className="font-bold text-text text-sm tracking-tight">
+            Paperless
           </span>
         </div>
-        <p className="text-text-dim text-[10px] mt-1 pl-9">
+        <p className="text-text-dim text-[10px] mt-1 pl-8">
           {role === 'staff' ? 'Nhân viên bán hàng' : 'Quản lý cửa hàng'}
         </p>
       </div>
@@ -64,9 +66,9 @@ export default function Sidebar({ role }: SidebarProps) {
             to={link.to}
             end={link.end}
             className={({ isActive }) =>
-              `block px-3 py-2.5 rounded-lg text-sm font-medium ${
+              `block px-3 py-2 rounded-lg text-xs font-medium ${
                 isActive
-                  ? 'bg-[#55C244]/15 text-[#55C244] border border-[#55C244]/30'
+                  ? 'bg-text text-bg font-semibold'
                   : 'text-text-muted hover:bg-surface-2 hover:text-text border border-transparent'
               }`
             }
@@ -74,21 +76,39 @@ export default function Sidebar({ role }: SidebarProps) {
             {link.label}
           </NavLink>
         ))}
+
+        <div className="mt-4 pt-3 border-t border-border">
+          <p className="px-3 text-[10px] font-semibold text-text-dim uppercase tracking-wider mb-1">
+            Mô hình mới
+          </p>
+          <NavLink
+            to="/app/grocery/order"
+            className="block px-3 py-1.5 rounded-lg text-xs text-text-dim hover:text-text hover:bg-surface-2"
+          >
+            Tạp hoá (POS)
+          </NavLink>
+          <NavLink
+            to="/app/cafe/order"
+            className="block px-3 py-1.5 rounded-lg text-xs text-text-dim hover:text-text hover:bg-surface-2"
+          >
+            Quán Cafe
+          </NavLink>
+        </div>
       </nav>
 
       {/* Role switch + theme switch + user info */}
       <div className="px-3 py-4 border-t border-border flex flex-col gap-2">
         <button
           onClick={switchRole}
-          className="w-full px-3 py-2 rounded-lg text-xs font-medium text-text-muted border border-border hover:border-[#55C244] hover:text-[#55C244] cursor-pointer bg-transparent"
+          className="w-full px-3 py-2 rounded-lg text-xs font-medium text-text-muted border border-border hover:border-text hover:text-text cursor-pointer bg-transparent"
         >
           {role === 'staff' ? 'Chuyển: Quản lý' : 'Chuyển: Nhân viên'}
         </button>
         <button
           onClick={toggleTheme}
-          className="w-full px-3 py-2 rounded-lg text-xs font-medium text-text-muted border border-border hover:border-[#55C244] hover:text-[#55C244] cursor-pointer bg-transparent"
+          className="w-full px-3 py-2 rounded-lg text-xs font-medium text-text-muted border border-border hover:border-text hover:text-text cursor-pointer bg-transparent"
         >
-          {theme === 'dark' ? 'Giao diện: Sáng' : 'Giao diện: Tối'}
+          {theme === 'light' ? 'Giao diện: Tối' : 'Giao diện: Sáng'}
         </button>
         <div className="px-3 py-2 rounded-lg bg-surface-2">
           <p className="text-text text-xs font-semibold">

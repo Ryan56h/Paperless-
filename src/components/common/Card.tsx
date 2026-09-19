@@ -9,9 +9,9 @@ interface StatCardProps {
 
 export function StatCard({ label, value, sub, accent }: StatCardProps) {
   return (
-    <div className={`rounded-xl p-5 border ${accent ? 'border-[#55C244]/40 bg-[#55C244]/5' : 'border-border bg-surface-2'}`}>
+    <div className={`rounded-xl p-5 border ${accent ? 'border-text/40 bg-surface' : 'border-border bg-surface-2'}`}>
       <p className="text-text-dim text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
-      <p className={`text-2xl font-bold ${accent ? 'text-[#55C244]' : 'text-text'}`}>{value}</p>
+      <p className="text-2xl font-bold text-text">{value}</p>
       {sub && <p className="text-text-muted text-xs mt-1">{sub}</p>}
     </div>
   );

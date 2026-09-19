@@ -16,9 +16,9 @@ function formatCurrency(n: number) {
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
-  Zalo: '#0068FF',
-  SMS: '#F59E0B',
-  'Cả hai': '#55C244',
+  Zalo: '#4B5563',
+  SMS: '#6B7280',
+  'Cả hai': '#111827',
 };
 
 const periods = ['Hôm nay', '7 ngày', '30 ngày'];
@@ -38,15 +38,15 @@ export default function ManagerDashboard() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-text">Tổng quan quản lý</h1>
-            <p className="text-text-dim text-sm mt-0.5">PaperLess+ · Chi nhánh Q1</p>
+            <p className="text-text-dim text-sm mt-0.5">Paperless · Chi nhánh Q1</p>
           </div>
           <div className="flex gap-1 bg-surface-2 border border-border rounded-lg p-1">
             {periods.map(p => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer ${
-                  period === p ? 'bg-[#55C244] text-black' : 'text-text-muted bg-transparent'
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer ${
+                  period === p ? 'bg-text text-bg' : 'text-text-muted bg-transparent hover:text-text'
                 }`}
               >
                 {p}
@@ -77,7 +77,7 @@ export default function ManagerDashboard() {
                     formatter={(v) => [typeof v === 'number' ? v.toLocaleString('vi-VN') + 'đ' : v, 'Doanh thu']}
                     labelStyle={{ color: '#9CA3AF' }}
                   />
-                  <Line type="monotone" dataKey="revenue" stroke="#55C244" strokeWidth={2} dot={{ r: 3, fill: '#55C244', strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="revenue" stroke="#111827" strokeWidth={2} dot={{ r: 3, fill: '#111827', strokeWidth: 0 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -97,7 +97,7 @@ export default function ManagerDashboard() {
                   />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                     {mockChannelStats.map(entry => (
-                      <Cell key={entry.channel} fill={CHANNEL_COLORS[entry.channel] ?? '#55C244'} />
+                      <Cell key={entry.channel} fill={CHANNEL_COLORS[entry.channel] ?? '#111827'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -140,10 +140,10 @@ export default function ManagerDashboard() {
                     <th className="px-4 py-3 text-center text-[11px] font-semibold text-text-dim uppercase tracking-wider">TT</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1E1E1E]">
+                <tbody className="divide-y divide-border">
                   {mockInvoices.slice(0, 5).map(inv => (
                     <tr key={inv.id} className="hover:bg-surface-2">
-                      <td className="px-4 py-2.5 font-mono text-[11px] text-[#55C244]">{inv.id.split('-').slice(-1)[0]}</td>
+                      <td className="px-4 py-2.5 font-mono text-[11px] text-text font-semibold">{inv.id.split('-').slice(-1)[0]}</td>
                       <td className="px-4 py-2.5 text-xs text-text">{inv.customerName}</td>
                       <td className="px-4 py-2.5 text-xs text-text text-right font-medium">{inv.total.toLocaleString('vi-VN')}đ</td>
                       <td className="px-4 py-2.5 text-center">

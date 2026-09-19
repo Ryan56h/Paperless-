@@ -89,8 +89,8 @@ export default function SendConfirmation() {
       <PageLayout role="staff">
         <div className="px-8 py-6 flex flex-col md:flex-row items-center justify-center gap-8 min-h-[80vh] max-w-4xl mx-auto">
           <div className="text-center max-w-sm flex-1">
-            <div className="w-16 h-16 rounded-full bg-[#55C244]/20 border-2 border-[#55C244] flex items-center justify-center mx-auto mb-5">
-              <span className="text-[#55C244] text-2xl font-bold">✓</span>
+            <div className="w-12 h-12 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4 text-text font-bold text-base">
+              ✓
             </div>
             <h2 className="text-xl font-bold text-text mb-2">Gửi thành công!</h2>
             <p className="text-text-muted text-sm mb-1">Hóa đơn đã được gửi tới <span className="text-text font-medium">{successInfo.phone}</span></p>
@@ -98,9 +98,9 @@ export default function SendConfirmation() {
 
             <div className="bg-surface-2 border border-border rounded-xl p-4 mb-5 text-left">
               <p className="text-[11px] text-text-dim uppercase tracking-wider mb-2">Mã hóa đơn</p>
-              <p className="font-mono text-[#55C244] font-bold">{invoiceId}</p>
+              <p className="font-mono text-text font-bold">{invoiceId}</p>
               <p className="text-[11px] text-text-dim mt-2">Link tra cứu:</p>
-              <p className="text-[#55C244] text-xs font-mono">paperless.vn/invoice/{invoiceId}</p>
+              <p className="text-text text-xs font-mono underline">paperless.vn/invoice/{invoiceId}</p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -120,7 +120,7 @@ export default function SendConfirmation() {
                   onClick={() => setActiveSuccessTab('zalo')}
                   className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer text-center ${
                     activeSuccessTab === 'zalo'
-                      ? 'bg-[#55C244] text-black font-bold'
+                      ? 'bg-text text-bg font-bold'
                       : 'text-text-muted hover:text-text'
                   }`}
                 >
@@ -130,7 +130,7 @@ export default function SendConfirmation() {
                   onClick={() => setActiveSuccessTab('sms')}
                   className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer text-center ${
                     activeSuccessTab === 'sms'
-                      ? 'bg-[#55C244] text-black font-bold'
+                      ? 'bg-text text-bg font-bold'
                       : 'text-text-muted hover:text-text'
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function SendConfirmation() {
     return (
       <PageLayout role="staff">
         <div className="px-8 py-6">
-          <p className="text-text-muted">Không có dữ liệu hóa đơn. <Link to="/staff/invoice/new" className="text-[#55C244]">Tạo mới</Link></p>
+          <p className="text-text-muted">Không có dữ liệu hóa đơn. <Link to="/staff/invoice/new" className="text-text underline">Tạo mới</Link></p>
         </div>
       </PageLayout>
     );
@@ -196,7 +196,7 @@ export default function SendConfirmation() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-[11px] text-text-dim uppercase tracking-wider mb-1">Mã hóa đơn (sẽ tạo)</p>
-                    <p className="font-mono text-[#55C244] font-bold">{invoiceId}</p>
+                    <p className="font-mono text-text font-bold">{invoiceId}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] text-text-dim mb-1">PaperLess+ · Chi nhánh Q1</p>
@@ -239,9 +239,9 @@ export default function SendConfirmation() {
                     <span className="text-text-muted">Thuế VAT (10%)</span>
                     <span className="text-text">{draft.tax.toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-border mt-1">
+                  <div className="flex justify-between pt-2 border-t border-border mt-1 items-center">
                     <span className="text-text font-semibold">Tổng cộng</span>
-                    <span className="text-[#55C244] font-bold text-base">{draft.total.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-text font-bold text-lg">{draft.total.toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function SendConfirmation() {
                       onClick={() => setActivePreviewTab('zalo')}
                       className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-colors cursor-pointer text-center ${
                         activePreviewTab === 'zalo'
-                          ? 'bg-[#55C244] text-black'
+                          ? 'bg-text text-bg'
                           : 'text-text-muted hover:text-text'
                       }`}
                     >
@@ -294,7 +294,7 @@ export default function SendConfirmation() {
                       onClick={() => setActivePreviewTab('sms')}
                       className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-colors cursor-pointer text-center ${
                         activePreviewTab === 'sms'
-                          ? 'bg-[#55C244] text-black'
+                          ? 'bg-text text-bg'
                           : 'text-text-muted hover:text-text'
                       }`}
                     >
