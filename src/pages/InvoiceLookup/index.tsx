@@ -38,14 +38,14 @@ export default function InvoiceLookup() {
       {/* Top bar */}
       <div className="border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#55C244] rounded-md flex items-center justify-center">
-            <span className="text-black text-xs font-black">P+</span>
+          <div className="w-6 h-6 bg-text text-bg rounded flex items-center justify-center">
+            <span className="text-xs font-bold">P</span>
           </div>
-          <span className="font-bold text-text text-sm">
-            Paper<span className="text-[#55C244]">Less+</span>
-          </span>
+          <span className="font-bold text-text text-sm tracking-tight">Paperless</span>
         </div>
-        <div className="flex gap-3 text-sm">
+        <div className="flex gap-4 text-xs font-medium">
+          <Link to="/app/grocery/order" className="text-text-muted hover:text-text">Tạp hoá POS</Link>
+          <Link to="/app/cafe/order" className="text-text-muted hover:text-text">Quán Cafe</Link>
           <Link to="/staff" className="text-text-muted hover:text-text">Nhân viên</Link>
           <Link to="/manager" className="text-text-muted hover:text-text">Quản lý</Link>
         </div>
@@ -61,7 +61,7 @@ export default function InvoiceLookup() {
         <div className="flex gap-3 mb-8">
           <input
             id="lookup-input"
-            className="flex-1 px-4 py-3 bg-surface-2 border border-border rounded-xl text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#55C244]"
+            className="flex-1 px-4 py-2.5 bg-surface-2 border border-border rounded-xl text-sm text-text placeholder-text-dim focus:outline-none focus:border-text"
             placeholder="VD: 0901234567 hoặc PL-20260529-001"
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -69,7 +69,7 @@ export default function InvoiceLookup() {
           />
           <button
             onClick={handleSearch}
-            className="px-6 py-3 bg-[#55C244] text-black font-semibold text-sm rounded-xl cursor-pointer hover:bg-[#3DA832]"
+            className="px-6 py-2.5 bg-text text-bg font-semibold text-sm rounded-xl cursor-pointer hover:opacity-90 border border-text"
           >
             Tra cứu
           </button>
@@ -78,9 +78,9 @@ export default function InvoiceLookup() {
         {/* Results */}
         {searched && results.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-3xl mb-3">—</p>
-            <p className="text-text font-semibold mb-1">Không tìm thấy hóa đơn</p>
-            <p className="text-text-dim text-sm">Kiểm tra lại SĐT hoặc mã hóa đơn</p>
+            <p className="text-2xl mb-2 text-text-dim">—</p>
+            <p className="text-text font-semibold mb-1 text-sm">Không tìm thấy hóa đơn</p>
+            <p className="text-text-dim text-xs">Kiểm tra lại SĐT hoặc mã hóa đơn</p>
           </div>
         )}
 
@@ -90,15 +90,15 @@ export default function InvoiceLookup() {
             <div className="flex flex-col gap-3">
               {results.map(inv => (
                 <Link key={inv.id} to={`/invoice/${inv.id}`}>
-                  <div className="bg-surface-2 border border-border rounded-xl p-4 hover:border-[#55C244]/40">
+                  <div className="bg-surface-2 border border-border rounded-xl p-4 hover:border-text/40">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-mono text-[#55C244] font-bold text-sm">{inv.id}</p>
+                        <p className="font-mono text-text font-bold text-sm">{inv.id}</p>
                         <p className="text-text font-medium text-sm mt-0.5">{inv.customerName}</p>
                         <p className="text-text-muted text-xs">{inv.customerPhone}</p>
                       </div>
                       <div className="text-right flex flex-col items-end gap-1.5">
-                        <p className="text-[#55C244] font-bold">{formatCurrency(inv.total)}</p>
+                        <p className="text-text font-bold">{formatCurrency(inv.total)}</p>
                         {sendBadge(inv.sendStatus)}
                       </div>
                     </div>
@@ -109,7 +109,7 @@ export default function InvoiceLookup() {
                           hour: '2-digit', minute: '2-digit'
                         })} · {inv.branch}
                       </p>
-                      <span className="text-[#55C244] text-xs font-medium">Xem chi tiết →</span>
+                      <span className="text-text text-xs font-medium hover:underline">Xem chi tiết →</span>
                     </div>
                   </div>
                 </Link>
@@ -120,7 +120,7 @@ export default function InvoiceLookup() {
 
         {!searched && (
           <div className="border border-dashed border-border rounded-xl p-8 text-center">
-            <p className="text-[#4B5563] text-sm">Thử: <span className="text-[#55C244] cursor-pointer" onClick={() => { setQuery('0901234567'); }}>0901234567</span></p>
+            <p className="text-text-dim text-xs">Thử: <span className="text-text font-mono underline cursor-pointer" onClick={() => { setQuery('0901234567'); }}>0901234567</span></p>
           </div>
         )}
       </div>

@@ -51,10 +51,10 @@ export default function InvoiceTable({ invoices, showBranch = false }: InvoiceTa
             <th className="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#1E1E1E]">
+        <tbody className="divide-y divide-border">
           {invoices.map(inv => (
             <tr key={inv.id} className="hover:bg-surface-2">
-              <td className="px-4 py-3 font-mono text-xs text-[#55C244]">{inv.id}</td>
+              <td className="px-4 py-3 font-mono text-xs text-text font-semibold">{inv.id}</td>
               <td className="px-4 py-3 text-text font-medium">{inv.customerName}</td>
               <td className="px-4 py-3 text-text-muted">{inv.customerPhone}</td>
               {showBranch && <td className="px-4 py-3 text-text-muted text-xs">{inv.branch}</td>}
@@ -63,7 +63,7 @@ export default function InvoiceTable({ invoices, showBranch = false }: InvoiceTa
               <td className="px-4 py-3 text-center">{sendStatusBadge(inv.sendStatus)}</td>
               <td className="px-4 py-3 text-text-dim text-xs">{formatTime(inv.createdAt)}</td>
               <td className="px-4 py-3">
-                <Link to={`/invoice/${inv.id}`} className="text-xs text-[#55C244] hover:text-[#3DA832]">Xem</Link>
+                <Link to={`/invoice/${inv.id}`} className="text-xs text-text hover:underline font-medium">Xem</Link>
               </td>
             </tr>
           ))}

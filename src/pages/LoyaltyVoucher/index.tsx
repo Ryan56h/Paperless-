@@ -38,46 +38,46 @@ function VoucherModal({ onClose }: VoucherModalProps) {
         </div>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#D1D5DB]">Mã voucher</label>
+            <label className="text-xs font-semibold text-text">Mã voucher</label>
             <input
-              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text uppercase placeholder-text-dim focus:outline-none focus:border-[#55C244] tracking-widest"
+              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text uppercase placeholder-text-dim focus:outline-none focus:border-text tracking-widest"
               placeholder="VD: SUMMER2026"
               value={code}
               onChange={e => setCode(e.target.value.toUpperCase())}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#D1D5DB]">Loại giảm giá</label>
+            <label className="text-xs font-semibold text-text">Loại giảm giá</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setType('percent')}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border cursor-pointer ${type === 'percent' ? 'bg-[#55C244]/15 border-[#55C244]/50 text-[#55C244]' : 'border-border text-text-dim bg-transparent'}`}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${type === 'percent' ? 'bg-text text-bg border-text' : 'border-border text-text-muted hover:text-text bg-surface'}`}
               >
                 Phần trăm (%)
               </button>
               <button
                 onClick={() => setType('fixed')}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border cursor-pointer ${type === 'fixed' ? 'bg-[#55C244]/15 border-[#55C244]/50 text-[#55C244]' : 'border-border text-text-dim bg-transparent'}`}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${type === 'fixed' ? 'bg-text text-bg border-text' : 'border-border text-text-muted hover:text-text bg-surface'}`}
               >
                 Số tiền cố định
               </button>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#D1D5DB]">Giá trị giảm {type === 'percent' ? '(%)' : '(đ)'}</label>
+            <label className="text-xs font-semibold text-text">Giá trị giảm {type === 'percent' ? '(%)' : '(đ)'}</label>
             <input
               type="number"
-              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#55C244]"
+              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-dim focus:outline-none focus:border-text"
               placeholder={type === 'percent' ? '10' : '50000'}
               value={value}
               onChange={e => setValue(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-[#D1D5DB]">Ngày hết hạn</label>
+            <label className="text-xs font-semibold text-text">Ngày hết hạn</label>
             <input
               type="date"
-              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-[#55C244]"
+              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-text"
               value={expiry}
               onChange={e => setExpiry(e.target.value)}
             />
@@ -113,13 +113,13 @@ export default function LoyaltyVoucher() {
         <div className="flex gap-0 mb-6 border-b border-border">
           <button
             onClick={() => setTab('loyalty')}
-            className={`px-5 py-3 text-sm font-medium border-b-2 cursor-pointer bg-transparent ${tab === 'loyalty' ? 'border-[#55C244] text-[#55C244]' : 'border-transparent text-text-dim hover:text-text'}`}
+            className={`px-5 py-3 text-xs font-semibold border-b-2 cursor-pointer bg-transparent ${tab === 'loyalty' ? 'border-text text-text' : 'border-transparent text-text-dim hover:text-text'}`}
           >
             Loyalty
           </button>
           <button
             onClick={() => setTab('voucher')}
-            className={`px-5 py-3 text-sm font-medium border-b-2 cursor-pointer bg-transparent ${tab === 'voucher' ? 'border-[#55C244] text-[#55C244]' : 'border-transparent text-text-dim hover:text-text'}`}
+            className={`px-5 py-3 text-xs font-semibold border-b-2 cursor-pointer bg-transparent ${tab === 'voucher' ? 'border-text text-text' : 'border-transparent text-text-dim hover:text-text'}`}
           >
             Voucher
           </button>
@@ -134,17 +134,19 @@ export default function LoyaltyVoucher() {
                 <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Tổng khách hàng</p>
                 <p className="text-2xl font-bold text-text">{mockCustomers.length}</p>
               </div>
-              <div className="bg-surface-2 border border-[#55C244]/30 rounded-xl p-4">
+              <div className="bg-surface-2 border border-border rounded-xl p-4">
                 <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Kim Cương</p>
-                <p className="text-2xl font-bold text-[#3B82F6]">{mockCustomers.filter(c => c.tier === 'diamond').length}</p>
+                <p className="text-2xl font-bold text-text">{mockCustomers.filter(c => c.tier === 'diamond').length}</p>
               </div>
               <div className="bg-surface-2 border border-border rounded-xl p-4">
-                <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Vàng</p>
-                <p className="text-2xl font-bold text-[#F59E0B]">{mockCustomers.filter(c => c.tier === 'gold').length}</p>
+                <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Tổng điểm tích luỹ</p>
+                <p className="text-2xl font-bold text-text">
+                  {mockCustomers.reduce((s, c) => s + c.points, 0).toLocaleString()}
+                </p>
               </div>
               <div className="bg-surface-2 border border-border rounded-xl p-4">
-                <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Bạc / Đồng</p>
-                <p className="text-2xl font-bold text-text-muted">{mockCustomers.filter(c => c.tier === 'silver' || c.tier === 'bronze').length}</p>
+                <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Voucher đang chạy</p>
+                <p className="text-2xl font-bold text-text">{mockVouchers.filter(v => v.status === 'active').length}</p>
               </div>
             </div>
 
@@ -161,12 +163,12 @@ export default function LoyaltyVoucher() {
                       <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Số đơn</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1E1E1E]">
+                  <tbody className="divide-y divide-border">
                     {mockCustomers.sort((a, b) => b.points - a.points).map(c => (
                       <tr key={c.id} className="hover:bg-surface-2">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-[#55C244]/20 border border-[#55C244]/30 flex items-center justify-center text-[#55C244] text-[11px] font-bold shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center text-text text-[11px] font-bold shrink-0">
                               {c.name.charAt(0)}
                             </div>
                             <span className="text-text font-medium text-sm">{c.name}</span>
@@ -174,7 +176,7 @@ export default function LoyaltyVoucher() {
                         </td>
                         <td className="px-4 py-3 text-text-muted text-sm">{c.phone}</td>
                         <td className="px-4 py-3 text-center">{tierBadge(c.tier)}</td>
-                        <td className="px-4 py-3 text-right text-[#55C244] font-semibold">{c.points.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-text font-semibold">{c.points.toLocaleString()}</td>
                         <td className="px-4 py-3 text-right text-text">{c.totalSpent.toLocaleString('vi-VN')}đ</td>
                         <td className="px-4 py-3 text-right text-text-muted">{c.totalOrders}</td>
                       </tr>
@@ -190,7 +192,7 @@ export default function LoyaltyVoucher() {
         {tab === 'voucher' && (
           <div className="grid grid-cols-2 gap-4">
             {mockVouchers.map(v => (
-              <div key={v.id} className={`bg-surface-2 border rounded-xl p-5 ${v.status === 'active' ? 'border-[#55C244]/30' : 'border-border'}`}>
+              <div key={v.id} className={`bg-surface-2 border rounded-xl p-5 ${v.status === 'active' ? 'border-border' : 'border-border'}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-mono text-text font-bold text-base tracking-widest">{v.code}</p>
@@ -210,7 +212,7 @@ export default function LoyaltyVoucher() {
                   </div>
                   <div className="w-full bg-border rounded-full h-1.5">
                     <div
-                      className={`h-1.5 rounded-full ${v.status === 'active' ? 'bg-[#55C244]' : 'bg-[#4B5563]'}`}
+                      className={`h-1.5 rounded-full ${v.status === 'active' ? 'bg-text' : 'bg-border'}`}
                       style={{ width: `${(v.usageCount / v.maxUsage) * 100}%` }}
                     />
                   </div>
@@ -219,7 +221,7 @@ export default function LoyaltyVoucher() {
                 <div className="flex justify-between items-center text-xs text-text-dim">
                   <span>HSD: {new Date(v.expiry).toLocaleDateString('vi-VN')}</span>
                   {v.status === 'active' && (
-                    <span className="text-[#55C244] font-medium cursor-pointer">Gửi cho KH</span>
+                    <span className="text-text font-medium cursor-pointer hover:underline">Gửi cho KH</span>
                   )}
                 </div>
               </div>

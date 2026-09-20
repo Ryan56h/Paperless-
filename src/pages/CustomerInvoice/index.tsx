@@ -35,8 +35,8 @@ function VietQRTransferCard({ total, id }: { total: number; id: string }) {
           })}
         </div>
         {/* Mock VietQR brand tag at center */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-white border border-[#55C244] rounded flex items-center justify-center">
-          <span className="text-[8px] font-black text-[#55C244]">P+</span>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-black rounded flex items-center justify-center">
+          <span className="text-[9px] font-bold text-black">P</span>
         </div>
       </div>
 
@@ -51,7 +51,7 @@ function VietQRTransferCard({ total, id }: { total: number; id: string }) {
         </div>
         <div className="flex justify-between items-center">
           <span>Số tiền:</span>
-          <span className="text-brand font-bold text-right">{total.toLocaleString('vi-VN')}đ</span>
+          <span className="text-text font-bold text-right">{total.toLocaleString('vi-VN')}đ</span>
         </div>
         <div className="flex justify-between items-center">
           <span>Nội dung:</span>
@@ -126,34 +126,26 @@ export default function CustomerInvoice() {
       <div className="max-w-sm mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-[#55C244] rounded-lg flex items-center justify-center">
-              <span className="text-black text-xs font-black">P+</span>
+          <div className="inline-flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 bg-text text-bg rounded flex items-center justify-center">
+              <span className="text-xs font-bold">P</span>
             </div>
-            <span className="font-bold text-text text-base">
-              Paper<span className="text-[#55C244]">Less+</span>
-            </span>
+            <span className="font-bold text-text text-base tracking-tight">Paperless</span>
           </div>
-          <h1 className="text-lg font-bold text-text">Hóa đơn điện tử</h1>
-          <p className="text-text-dim text-xs mt-1">{data.branch}</p>
+          <h1 className="text-base font-bold text-text">Hóa đơn điện tử</h1>
+          <p className="text-text-dim text-xs mt-0.5">{data.branch}</p>
         </div>
 
         {/* Payment Status Banner */}
         {data.requirePayment && (
-          <div className={`mb-4 px-4 py-3 rounded-xl border text-center text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${paymentStatus === 'unpaid'
-              ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#F59E0B] animate-pulse'
-              : 'bg-[#55C244]/10 border-[#55C244]/30 text-[#55C244]'
+          <div className={`mb-4 px-4 py-2.5 rounded-lg border text-center text-xs font-medium flex items-center justify-center gap-2 ${paymentStatus === 'unpaid'
+              ? 'bg-surface-2 border-border text-text-muted'
+              : 'bg-surface border-border text-text font-semibold'
             }`}>
             {paymentStatus === 'unpaid' ? (
-              <>
-                <span className="inline-block w-2 h-2 rounded-full bg-[#F59E0B] animate-ping" />
-                <span>CHỜ THANH TOÁN QUA PAYOS (Tự động cập nhật...)</span>
-              </>
+              <span>Chờ thanh toán qua PayOS (Tự động cập nhật...)</span>
             ) : (
-              <>
-                <span className="inline-block w-2 h-2 rounded-full bg-[#55C244]" />
-                <span>ĐÃ THANH TOÁN THÀNH CÔNG QUA PAYOS ✓</span>
-              </>
+              <span>✓ Đã thanh toán thành công qua PayOS</span>
             )}
           </div>
         )}
@@ -166,13 +158,13 @@ export default function CustomerInvoice() {
         )}
 
         {/* Invoice card */}
-        <div className="bg-surface-2 border border-border rounded-2xl overflow-hidden mb-4">
+        <div className="bg-surface-2 border border-border rounded-xl overflow-hidden mb-4">
           {/* Top strip */}
-          <div className="bg-[#55C244]/10 border-b border-[#55C244]/20 px-5 py-3">
+          <div className="bg-surface border-b border-border px-5 py-3">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-[10px] text-text-dim uppercase tracking-wider">Mã hóa đơn</p>
-                <p className="font-mono text-[#55C244] font-bold text-sm">{data.id}</p>
+                <p className="font-mono text-text font-bold text-sm">{data.id}</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-text-dim">
@@ -226,7 +218,7 @@ export default function CustomerInvoice() {
 
           <div className="px-5 py-4 flex justify-between items-center">
             <span className="text-text font-bold">Tổng cộng</span>
-            <span className="text-[#55C244] font-bold text-xl">{formatCurrency(data.total)}</span>
+            <span className="text-text font-bold text-xl">{formatCurrency(data.total)}</span>
           </div>
         </div>
 
@@ -235,17 +227,17 @@ export default function CustomerInvoice() {
         <div className="flex flex-col gap-2">
           <button
             disabled={data.requirePayment && paymentStatus === 'unpaid'}
-            className={`w-full py-3 rounded-xl font-semibold text-sm cursor-pointer transition-all ${data.requirePayment && paymentStatus === 'unpaid'
-                ? 'bg-border text-text-dim cursor-not-allowed border border-border'
-                : 'bg-[#55C244] text-black hover:bg-[#45a837]'
+            className={`w-full py-2.5 rounded-lg font-medium text-xs cursor-pointer ${data.requirePayment && paymentStatus === 'unpaid'
+                ? 'bg-surface-2 text-text-dim cursor-not-allowed border border-border'
+                : 'bg-text text-bg hover:opacity-90 border border-text'
               }`}
           >
             {data.requirePayment && paymentStatus === 'unpaid'
-              ? '🔒 Vui lòng thanh toán VietQR để tải PDF'
+              ? 'Vui lòng thanh toán VietQR để tải PDF'
               : 'Tải PDF'}
           </button>
           <Link to="/lookup">
-            <button className="w-full py-3 rounded-xl bg-surface-2 border border-border text-text text-sm cursor-pointer">
+            <button className="w-full py-2.5 rounded-lg bg-surface border border-border text-text-muted hover:text-text text-xs cursor-pointer font-medium">
               Tra cứu hóa đơn khác
             </button>
           </Link>

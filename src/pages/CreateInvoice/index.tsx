@@ -93,20 +93,20 @@ export default function CreateInvoice() {
             </div>
 
             {foundCustomer && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#55C244]/10 border border-[#55C244]/30">
-                <div className="w-8 h-8 rounded-full bg-[#55C244]/20 border border-[#55C244]/40 flex items-center justify-center text-[#55C244] text-xs font-bold">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-2 border border-border">
+                <div className="w-8 h-8 rounded-full bg-text text-bg flex items-center justify-center text-xs font-bold">
                   {foundCustomer.name.charAt(0)}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-text">{foundCustomer.name}</p>
                   <p className="text-text-muted text-xs">{foundCustomer.points.toLocaleString()} điểm · {foundCustomer.tier.toUpperCase()} · {foundCustomer.totalOrders} đơn hàng</p>
                 </div>
-                <span className="ml-auto text-[10px] font-bold text-[#55C244] border border-[#55C244]/40 px-2 py-0.5 rounded">Khách cũ</span>
+                <span className="ml-auto text-[10px] font-semibold text-text bg-surface border border-border px-2 py-0.5 rounded">Khách cũ</span>
               </div>
             )}
 
             {!foundCustomer && phone.length >= 9 && (
-              <div className="px-4 py-3 rounded-lg bg-border border border-border">
+              <div className="px-4 py-3 rounded-lg bg-surface-2 border border-border">
                 <p className="text-text-muted text-xs">Khách hàng mới — sẽ được tạo tài khoản tự động</p>
               </div>
             )}
@@ -120,18 +120,16 @@ export default function CreateInvoice() {
             />
 
             <div>
-              <p className="text-sm font-medium text-[#D1D5DB] mb-2">Kênh gửi hóa đơn</p>
+              <p className="text-xs font-semibold text-text mb-2">Kênh gửi hóa đơn</p>
               <div className="flex gap-2">
                 {(['zalo', 'sms', 'both'] as const).map(ch => (
                   <button
                     key={ch}
                     onClick={() => setChannel(ch)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border cursor-pointer ${
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${
                       channel === ch
-                        ? ch === 'zalo' ? 'bg-[#0068FF]/15 border-[#0068FF]/50 text-[#4D9FFF]'
-                          : ch === 'sms' ? 'bg-[#F59E0B]/15 border-[#F59E0B]/50 text-[#F59E0B]'
-                          : 'bg-[#55C244]/15 border-[#55C244]/50 text-[#55C244]'
-                        : 'border-border text-text-dim bg-transparent'
+                        ? 'bg-text text-bg border-text'
+                        : 'border-border text-text-muted hover:text-text bg-surface'
                     }`}
                   >
                     {ch === 'zalo' ? 'Zalo' : ch === 'sms' ? 'SMS' : 'Cả hai'}
@@ -155,7 +153,7 @@ export default function CreateInvoice() {
               {items.map(item => (
                 <div key={item.id} className="grid grid-cols-[1fr_80px_110px_28px] gap-2 items-center">
                   <input
-                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-dim focus:outline-none focus:border-[#55C244]"
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-dim focus:outline-none focus:border-text"
                     placeholder="Tên sản phẩm..."
                     value={item.name}
                     onChange={e => updateItem(item.id, 'name', e.target.value)}
@@ -163,14 +161,14 @@ export default function CreateInvoice() {
                   <input
                     type="number"
                     min={1}
-                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-center focus:outline-none focus:border-[#55C244]"
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-center focus:outline-none focus:border-text"
                     value={item.quantity}
                     onChange={e => updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
                   />
                   <input
                     type="number"
                     min={0}
-                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-right focus:outline-none focus:border-[#55C244]"
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text text-right focus:outline-none focus:border-text"
                     placeholder="0"
                     value={item.unitPrice || ''}
                     onChange={e => updateItem(item.id, 'unitPrice', parseInt(e.target.value) || 0)}
@@ -200,7 +198,7 @@ export default function CreateInvoice() {
               <input
                 type="number"
                 min={0}
-                className="w-32 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm text-text text-right focus:outline-none focus:border-[#55C244]"
+                className="w-32 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm text-text text-right focus:outline-none focus:border-text"
                 value={discount || ''}
                 placeholder="0"
                 onChange={e => setDiscount(parseInt(e.target.value) || 0)}
@@ -223,13 +221,13 @@ export default function CreateInvoice() {
                   onChange={e => setRequirePayment(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#9CA3AF] peer-checked:after:bg-bg after:rounded-full after:h-4 after:w-4 peer-checked:bg-[#55C244]" />
+                <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted peer-checked:after:bg-bg after:rounded-full after:h-4 after:w-4 peer-checked:bg-text" />
               </label>
             </div>
 
-            <div className="border-t border-border pt-3 flex justify-between">
+            <div className="border-t border-border pt-3 flex justify-between items-center">
               <span className="text-text font-semibold">Thành tiền</span>
-              <span className="text-[#55C244] font-bold text-lg">{total.toLocaleString('vi-VN')}đ</span>
+              <span className="text-text font-bold text-xl">{total.toLocaleString('vi-VN')}đ</span>
             </div>
           </div>
         </Card>
