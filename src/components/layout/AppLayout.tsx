@@ -84,7 +84,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {business?.name || (currentType === 'cafe' ? 'Mộc Lan Cafe' : 'Tạp Hoá Minh Phát')}
             </p>
             <p className="text-[10px] text-text-dim truncate">
-              {business?.ownerName || 'Chủ cửa hàng'}
+              {business?.ownerName || user?.fullName || 'Chủ cửa hàng'}
             </p>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <button
             onClick={() => {
               logout();
-              navigate('/login');
+              navigate('/login', { replace: true });
             }}
             className="px-3 py-1.5 rounded text-xs text-text-muted bg-surface-2 hover:text-text border border-border cursor-pointer transition-colors"
           >

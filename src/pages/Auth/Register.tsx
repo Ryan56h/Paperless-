@@ -51,8 +51,8 @@ export default function Register() {
         step === 1
           ? 'Bước 1: Chọn loại hình kinh doanh'
           : step === 2
-          ? 'Bước 2: Thông tin cửa hàng'
-          : 'Bước 3: Xác nhận'
+            ? 'Bước 2: Thông tin cửa hàng'
+            : 'Bước 3: Xác nhận'
       }
     >
       {/* Progress */}
@@ -69,11 +69,10 @@ export default function Register() {
         <div className="space-y-3">
           <div
             onClick={() => setBusinessType('grocery')}
-            className={`p-3.5 rounded border transition-colors cursor-pointer ${
-              businessType === 'grocery'
+            className={`p-3.5 rounded border transition-colors cursor-pointer ${businessType === 'grocery'
                 ? 'border-text bg-surface-2'
                 : 'border-border bg-surface hover:border-text-dim'
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-text">Cửa hàng tạp hoá & tiện lợi</h4>
@@ -88,11 +87,10 @@ export default function Register() {
 
           <div
             onClick={() => setBusinessType('cafe')}
-            className={`p-3.5 rounded border transition-colors cursor-pointer ${
-              businessType === 'cafe'
+            className={`p-3.5 rounded border transition-colors cursor-pointer ${businessType === 'cafe'
                 ? 'border-text bg-surface-2'
                 : 'border-border bg-surface hover:border-text-dim'
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-text">Quán cafe & đồ uống</h4>

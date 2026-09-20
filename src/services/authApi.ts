@@ -36,18 +36,23 @@ export async function loginApi(
   password?: string,
   businessType?: BusinessType
 ): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      emailOrPhone,
-      email: emailOrPhone,
-      password: password || '123456',
-      businessType,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        emailOrPhone,
+        email: emailOrPhone,
+        password: password || '123456',
+        businessType,
+      }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra xem server backend đã được khởi động chưa.');
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -58,24 +63,29 @@ export async function loginApi(
 }
 
 export async function registerApi(payload: RegisterPayload): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: payload.name,
-      storeName: payload.name,
-      type: payload.type,
-      ownerName: payload.ownerName,
-      ownerFullName: payload.ownerName,
-      phone: payload.phone,
-      email: payload.email,
-      password: payload.password || '123456',
-      address: payload.address,
-      taxCode: payload.taxCode,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: payload.name,
+        storeName: payload.name,
+        type: payload.type,
+        ownerName: payload.ownerName,
+        ownerFullName: payload.ownerName,
+        phone: payload.phone,
+        email: payload.email,
+        password: payload.password || '123456',
+        address: payload.address,
+        taxCode: payload.taxCode,
+      }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra xem server backend đã được khởi động chưa.');
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -86,11 +96,16 @@ export async function registerApi(payload: RegisterPayload): Promise<AuthRespons
 }
 
 export async function getMeApi(token: string): Promise<{ user: UserResponse; business: BusinessProfile }> {
-  const response = await fetch(`${API_URL}/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend.');
+  }
 
   if (!response.ok) {
     throw new Error(`Xác thực phiên làm việc thất bại (${response.status})`);

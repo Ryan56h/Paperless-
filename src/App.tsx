@@ -24,6 +24,7 @@ import InvoiceLookup from './pages/InvoiceLookup';
 import ManagerDashboard from './pages/ManagerDashboard';
 import LoyaltyVoucher from './pages/LoyaltyVoucher';
 import { useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 function AppRedirect() {
   const { business, user } = useAuth();
@@ -37,30 +38,116 @@ export default function App() {
       <AuthProvider>
         <OrderProvider>
           <Routes>
-            {/* Landing & Authentication */}
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/app" element={<AppRedirect />} />
+            <Route path="/lookup" element={<InvoiceLookup />} />
+            <Route path="/invoice/:id" element={<CustomerInvoice />} />
+
+            {/* Authenticated POS Routes */}
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute>
+                  <AppRedirect />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Grocery Business Module */}
-            <Route path="/app/grocery/order" element={<GroceryOrderPage />} />
-            <Route path="/app/grocery/display" element={<GroceryDisplayPage />} />
-            <Route path="/app/grocery/revenue" element={<GroceryRevenuePage />} />
+            <Route
+              path="/app/grocery/order"
+              element={
+                <ProtectedRoute requiredBusinessType="grocery">
+                  <GroceryOrderPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/grocery/display"
+              element={
+                <ProtectedRoute requiredBusinessType="grocery">
+                  <GroceryDisplayPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/grocery/revenue"
+              element={
+                <ProtectedRoute requiredBusinessType="grocery">
+                  <GroceryRevenuePage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Cafe Business Module */}
-            <Route path="/app/cafe/order" element={<CafeOrderPage />} />
-            <Route path="/app/cafe/display" element={<CafeDisplayPage />} />
-            <Route path="/app/cafe/revenue" element={<CafeRevenuePage />} />
+            <Route
+              path="/app/cafe/order"
+              element={
+                <ProtectedRoute requiredBusinessType="cafe">
+                  <CafeOrderPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/cafe/display"
+              element={
+                <ProtectedRoute requiredBusinessType="cafe">
+                  <CafeDisplayPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/cafe/revenue"
+              element={
+                <ProtectedRoute requiredBusinessType="cafe">
+                  <CafeRevenuePage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Legacy Features */}
-            <Route path="/staff" element={<StaffOrder />} />
-            <Route path="/staff/invoice/new" element={<CreateInvoice />} />
-            <Route path="/staff/invoice/confirm" element={<SendConfirmation />} />
-            <Route path="/invoice/:id" element={<CustomerInvoice />} />
-            <Route path="/lookup" element={<InvoiceLookup />} />
-            <Route path="/manager" element={<ManagerDashboard />} />
-            <Route path="/manager/loyalty" element={<LoyaltyVoucher />} />
+            {/* Staff & Manager Features */}
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute>
+                  <StaffOrder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/invoice/new"
+              element={
+                <ProtectedRoute>
+                  <CreateInvoice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/invoice/confirm"
+              element={
+                <ProtectedRoute>
+                  <SendConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manager"
+              element={
+                <ProtectedRoute>
+                  <ManagerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manager/loyalty"
+              element={
+                <ProtectedRoute>
+                  <LoyaltyVoucher />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

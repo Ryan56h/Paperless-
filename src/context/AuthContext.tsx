@@ -1,14 +1,21 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { BusinessProfile, BusinessType } from '../types';
-import { loginApi, registerApi, type RegisterPayload, type UserResponse } from '../services/authApi';
+import { loginApi, registerApi, getMeApi, type RegisterPayload, type UserResponse } from '../services/authApi';
+
+export interface AuthResult {
+  success: boolean;
+  businessType?: BusinessType;
+  error?: string;
+}
 
 interface AuthContextType {
   business: BusinessProfile | null;
   user: UserResponse | null;
   token: string | null;
   isLoggedIn: boolean;
-  login: (email: string, passwordOrType?: string | BusinessType, explicitType?: BusinessType) => Promise<BusinessType | null>;
-  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }) => Promise<boolean>;
+  isLoading: boolean;
+  login: (email: string, password?: string, explicitType?: BusinessType) => Promise<AuthResult>;
+  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }) => Promise<AuthResult>;
   switchBusinessType: (type: BusinessType) => void;
   logout: () => void;
 }
@@ -62,24 +69,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // fallback
     }
-    try {
-      const savedUser = localStorage.getItem('paperless_user');
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        if (u.businessType === 'cafe') return defaultProfiles.cafe;
-      }
-    } catch {
-      // fallback
-    }
-    return defaultProfiles.grocery;
+    return null;
   });
 
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Verify session on initial mount with getMeApi
+  useEffect(() => {
+    let isMounted = true;
+    const verifySession = async () => {
+      const storedToken = localStorage.getItem('paperless_token');
+      if (!storedToken) {
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
+      try {
+        const data = await getMeApi(storedToken);
+        if (isMounted) {
+          if (data && data.user) {
+            setUser(data.user);
+            if (data.business) {
+              setBusiness(data.business);
+            }
+            setToken(storedToken);
+          } else {
+            logout();
+          }
+        }
+      } catch (err) {
+        console.warn('Phiên làm việc hết hạn hoặc không kết nối được server:', err);
+        if (isMounted) {
+          logout();
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    verifySession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync business type if user exists
   useEffect(() => {
     if (user?.businessType && business && business.type !== user.businessType) {
-      setBusiness(prev => prev ? { ...prev, type: user.businessType as BusinessType } : prev);
+      setBusiness(prev => (prev ? { ...prev, type: user.businessType as BusinessType } : prev));
     }
   }, [user?.businessType]);
 
+  // Persist state changes to localStorage
   useEffect(() => {
     if (business) {
       localStorage.setItem('paperless_business', JSON.stringify(business));
@@ -106,46 +149,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (
     email: string,
-    passwordOrType?: string | BusinessType,
+    password?: string,
     explicitType?: BusinessType
-  ): Promise<BusinessType | null> => {
-    let password = '123456';
-    let type: BusinessType = 'grocery';
-
-    if (passwordOrType === 'grocery' || passwordOrType === 'cafe') {
-      type = passwordOrType;
-    } else if (typeof passwordOrType === 'string' && passwordOrType.trim()) {
-      password = passwordOrType;
-      if (explicitType) type = explicitType;
-    }
-
+  ): Promise<AuthResult> => {
+    const pwd = password || '123456';
     try {
-      const res = await loginApi(email, password, type);
+      const res = await loginApi(email, pwd, explicitType);
       if (res && res.token) {
         setToken(res.token);
         setUser(res.user);
         if (res.business) {
           setBusiness(res.business);
         }
-        const resolvedType = (res.business?.type || res.user?.businessType || type) as BusinessType;
-        return resolvedType;
+        const resolvedType = (res.business?.type || res.user?.businessType || 'grocery') as BusinessType;
+        return { success: true, businessType: resolvedType };
       }
-    } catch (error) {
-      console.warn('Lỗi kết nối Backend Auth hoặc sai thông tin, chuyển sang chế độ Demo Local Storage:', error);
+      return { success: false, error: 'Đăng nhập không thành công.' };
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Tài khoản hoặc mật khẩu không chính xác.';
+      return { success: false, error: errorMsg };
     }
-
-    const base = defaultProfiles[type];
-    const fallbackProfile: BusinessProfile = {
-      ...base,
-      email: email || base.email,
-    };
-    setBusiness(fallbackProfile);
-    return type;
   };
 
   const register = async (
     data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }
-  ): Promise<boolean> => {
+  ): Promise<AuthResult> => {
     try {
       const payload: RegisterPayload = {
         name: data.name,
@@ -159,23 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       const res = await registerApi(payload);
-      if (res && res.business) {
+      if (res && res.token) {
         setToken(res.token);
         setUser(res.user);
-        setBusiness(res.business);
-        return true;
+        if (res.business) {
+          setBusiness(res.business);
+        }
+        const resolvedType = (res.business?.type || res.user?.businessType || data.type) as BusinessType;
+        return { success: true, businessType: resolvedType };
       }
-    } catch (error) {
-      console.warn('Lỗi đăng ký Backend, chuyển sang lưu dữ liệu mẫu vào Local Storage:', error);
+      return { success: false, error: 'Đăng ký không thành công.' };
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Đăng ký tài khoản thất bại.';
+      return { success: false, error: errorMsg };
     }
-
-    const newProfile: BusinessProfile = {
-      ...data,
-      id: `BIZ-${Date.now().toString(36).toUpperCase()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setBusiness(newProfile);
-    return true;
   };
 
   const switchBusinessType = (type: BusinessType) => {
@@ -197,7 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         business,
         user,
         token,
-        isLoggedIn: !!business,
+        isLoggedIn: !!token && (!!user || !!business),
+        isLoading,
         login,
         register,
         switchBusinessType,
@@ -216,3 +242,4 @@ export function useAuth() {
   }
   return context;
 }
+
