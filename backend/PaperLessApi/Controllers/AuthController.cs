@@ -70,13 +70,13 @@ public class AuthController : ControllerBase
             Email = request.Email,
             Phone = request.Phone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Role = "owner"
+            BusinessType = businessType
         };
         _context.Users.Add(user);
 
         await _context.SaveChangesAsync();
 
-        var token = _tokenService.GenerateToken(user, tenant.Name, tenant.BusinessType);
+        var token = _tokenService.GenerateToken(user, tenant.Name, user.BusinessType);
 
         return Ok(new LoginResponse
         {
@@ -87,10 +87,9 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                Role = user.Role,
                 TenantId = tenant.Id,
                 TenantName = tenant.Name,
-                BusinessType = tenant.BusinessType,
+                BusinessType = user.BusinessType,
                 BranchId = branch.Id
             },
             Business = new BusinessProfileDto
@@ -141,7 +140,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không chính xác." });
         }
 
-        var token = _tokenService.GenerateToken(user, user.Tenant?.Name, user.Tenant?.BusinessType);
+        var token = _tokenService.GenerateToken(user, user.Tenant?.Name, user.BusinessType ?? user.Tenant?.BusinessType);
 
         var businessDto = user.Tenant != null ? new BusinessProfileDto
         {
@@ -165,10 +164,9 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                Role = user.Role,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name,
-                BusinessType = user.Tenant?.BusinessType,
+                BusinessType = user.BusinessType ?? user.Tenant?.BusinessType,
                 BranchId = user.BranchId
             },
             Business = businessDto
@@ -217,10 +215,9 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                Role = user.Role,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name,
-                BusinessType = user.Tenant?.BusinessType,
+                BusinessType = user.BusinessType ?? user.Tenant?.BusinessType,
                 BranchId = user.BranchId
             },
             business = businessDto

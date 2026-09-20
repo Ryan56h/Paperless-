@@ -24,14 +24,15 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    register({
+    await register({
       name: formData.name || (businessType === 'grocery' ? 'Cửa Hàng Tạp Hoá' : 'Quán Cafe'),
       type: businessType,
       ownerName: formData.ownerName || 'Chủ Cửa Hàng',
       phone: formData.phone || '0901 234 567',
       email: formData.email || 'business@paperless.vn',
+      password: formData.password || '123456',
       address: formData.address || 'Hồ Chí Minh',
       taxCode: formData.taxCode || '0319888999',
     });

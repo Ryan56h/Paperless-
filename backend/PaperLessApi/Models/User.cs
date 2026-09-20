@@ -29,8 +29,8 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(20)]
-    public string Role { get; set; } = "staff";
+    [MaxLength(50)]
+    public string BusinessType { get; set; } = "grocery";
 
     public string? BranchId { get; set; }
     public Branch? Branch { get; set; }

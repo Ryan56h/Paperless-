@@ -83,7 +83,7 @@ public static class DbInitializer
                     Email = "minhphat.mart@gmail.com",
                     Phone = "0908123456",
                     PasswordHash = defaultPasswordHash,
-                    Role = "owner"
+                    BusinessType = "grocery"
                 };
                 context.Users.Add(groceryOwner);
             }
@@ -156,7 +156,7 @@ public static class DbInitializer
                     Email = "moclan.coffee@gmail.com",
                     Phone = "0912888999",
                     PasswordHash = defaultPasswordHash,
-                    Role = "owner"
+                    BusinessType = "cafe"
                 };
                 context.Users.Add(cafeOwner);
             }

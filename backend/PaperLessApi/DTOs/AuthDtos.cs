@@ -82,7 +82,6 @@ public class UserDto
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
     public string? TenantId { get; set; }
     public string? TenantName { get; set; }
     public string? BusinessType { get; set; }

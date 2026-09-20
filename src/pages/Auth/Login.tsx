@@ -12,18 +12,18 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>('grocery');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, businessType);
-    if (businessType === 'cafe') {
+    const resolvedType = await login(email, password, businessType);
+    if (resolvedType === 'cafe') {
       navigate('/app/cafe/order');
     } else {
       navigate('/app/grocery/order');
     }
   };
 
-  const handleQuickDemo = (type: BusinessType) => {
-    login(type === 'cafe' ? 'moclan.coffee@gmail.com' : 'minhphat.mart@gmail.com', type);
+  const handleQuickDemo = async (type: BusinessType) => {
+    await login(type === 'cafe' ? 'moclan.coffee@gmail.com' : 'minhphat.mart@gmail.com', '123456', type);
     if (type === 'cafe') {
       navigate('/app/cafe/order');
     } else {

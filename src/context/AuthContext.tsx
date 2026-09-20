@@ -1,16 +1,19 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { BusinessProfile, BusinessType } from '../types';
+import { loginApi, registerApi, type RegisterPayload, type UserResponse } from '../services/authApi';
 
 interface AuthContextType {
   business: BusinessProfile | null;
+  user: UserResponse | null;
+  token: string | null;
   isLoggedIn: boolean;
-  login: (email: string, businessType?: BusinessType) => void;
-  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'>) => void;
+  login: (email: string, passwordOrType?: string | BusinessType, explicitType?: BusinessType) => Promise<BusinessType | null>;
+  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }) => Promise<boolean>;
   switchBusinessType: (type: BusinessType) => void;
   logout: () => void;
 }
 
-const defaultProfiles: Record<BusinessType, BusinessProfile> = {
+export const defaultProfiles: Record<BusinessType, BusinessProfile> = {
   grocery: {
     id: 'BIZ-GROCERY-01',
     name: 'Tạp Hóa & Siêu Thị Mini Minh Phát',
@@ -38,6 +41,20 @@ const defaultProfiles: Record<BusinessType, BusinessProfile> = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('paperless_token');
+  });
+
+  const [user, setUser] = useState<UserResponse | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('paperless_user');
+      if (savedUser) return JSON.parse(savedUser);
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
   const [business, setBusiness] = useState<BusinessProfile | null>(() => {
     try {
       const saved = localStorage.getItem('paperless_business');
@@ -45,8 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // fallback
     }
-    return defaultProfiles.grocery; // Mặc định mở đầu để người dùng trải nghiệm ngay
+    try {
+      const savedUser = localStorage.getItem('paperless_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.businessType === 'cafe') return defaultProfiles.cafe;
+      }
+    } catch {
+      // fallback
+    }
+    return defaultProfiles.grocery;
   });
+
+  useEffect(() => {
+    if (user?.businessType && business && business.type !== user.businessType) {
+      setBusiness(prev => prev ? { ...prev, type: user.businessType as BusinessType } : prev);
+    }
+  }, [user?.businessType]);
 
   useEffect(() => {
     if (business) {
@@ -56,22 +88,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [business]);
 
-  const login = (email: string, businessType: BusinessType = 'grocery') => {
-    const base = defaultProfiles[businessType];
-    const userProfile: BusinessProfile = {
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('paperless_token', token);
+    } else {
+      localStorage.removeItem('paperless_token');
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('paperless_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('paperless_user');
+    }
+  }, [user]);
+
+  const login = async (
+    email: string,
+    passwordOrType?: string | BusinessType,
+    explicitType?: BusinessType
+  ): Promise<BusinessType | null> => {
+    let password = '123456';
+    let type: BusinessType = 'grocery';
+
+    if (passwordOrType === 'grocery' || passwordOrType === 'cafe') {
+      type = passwordOrType;
+    } else if (typeof passwordOrType === 'string' && passwordOrType.trim()) {
+      password = passwordOrType;
+      if (explicitType) type = explicitType;
+    }
+
+    try {
+      const res = await loginApi(email, password, type);
+      if (res && res.token) {
+        setToken(res.token);
+        setUser(res.user);
+        if (res.business) {
+          setBusiness(res.business);
+        }
+        const resolvedType = (res.business?.type || res.user?.businessType || type) as BusinessType;
+        return resolvedType;
+      }
+    } catch (error) {
+      console.warn('Lỗi kết nối Backend Auth hoặc sai thông tin, chuyển sang chế độ Demo Local Storage:', error);
+    }
+
+    const base = defaultProfiles[type];
+    const fallbackProfile: BusinessProfile = {
       ...base,
       email: email || base.email,
     };
-    setBusiness(userProfile);
+    setBusiness(fallbackProfile);
+    return type;
   };
 
-  const register = (data: Omit<BusinessProfile, 'id' | 'createdAt'>) => {
+  const register = async (
+    data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }
+  ): Promise<boolean> => {
+    try {
+      const payload: RegisterPayload = {
+        name: data.name,
+        type: data.type,
+        ownerName: data.ownerName,
+        phone: data.phone,
+        email: data.email,
+        password: data.password || '123456',
+        address: data.address,
+        taxCode: data.taxCode,
+      };
+
+      const res = await registerApi(payload);
+      if (res && res.business) {
+        setToken(res.token);
+        setUser(res.user);
+        setBusiness(res.business);
+        return true;
+      }
+    } catch (error) {
+      console.warn('Lỗi đăng ký Backend, chuyển sang lưu dữ liệu mẫu vào Local Storage:', error);
+    }
+
     const newProfile: BusinessProfile = {
       ...data,
       id: `BIZ-${Date.now().toString(36).toUpperCase()}`,
       createdAt: new Date().toISOString().split('T')[0],
     };
     setBusiness(newProfile);
+    return true;
   };
 
   const switchBusinessType = (type: BusinessType) => {
@@ -80,12 +184,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setBusiness(null);
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('paperless_business');
+    localStorage.removeItem('paperless_token');
+    localStorage.removeItem('paperless_user');
   };
 
   return (
     <AuthContext.Provider
       value={{
         business,
+        user,
+        token,
         isLoggedIn: !!business,
         login,
         register,

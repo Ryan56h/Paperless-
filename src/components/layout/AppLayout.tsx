@@ -1,13 +1,14 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import type { BusinessType } from '../../types';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { business, switchBusinessType, logout } = useAuth();
+  const { business, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,8 +28,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }
   };
 
-  const isCafeRoute = location.pathname.includes('/cafe');
-  const currentType = isCafeRoute ? 'cafe' : 'grocery';
+  const userBusinessType: BusinessType =
+    (business?.type as BusinessType) ||
+    (user?.businessType as BusinessType) ||
+    (location.pathname.includes('/cafe') ? 'cafe' : 'grocery');
+
+  const currentType = userBusinessType;
+
+  useEffect(() => {
+    if (userBusinessType === 'cafe' && location.pathname.includes('/grocery')) {
+      const target = location.pathname.replace('/grocery', '/cafe');
+      navigate(target, { replace: true });
+    } else if (userBusinessType === 'grocery' && location.pathname.includes('/cafe')) {
+      const target = location.pathname.replace('/cafe', '/grocery');
+      navigate(target, { replace: true });
+    }
+  }, [userBusinessType, location.pathname, navigate]);
 
   const groceryLinks = [
     { to: '/app/grocery/order', label: 'Bán hàng (POS)' },
@@ -42,12 +57,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
   ];
 
   const activeLinks = currentType === 'cafe' ? cafeLinks : groceryLinks;
-
-  const handleSwitchType = () => {
-    const targetType = currentType === 'cafe' ? 'grocery' : 'cafe';
-    switchBusinessType(targetType);
-    navigate(targetType === 'cafe' ? '/app/cafe/order' : '/app/grocery/order');
-  };
 
   return (
     <div className="flex h-screen w-full bg-bg text-text overflow-hidden font-sans">
@@ -101,19 +110,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {link.label}
             </NavLink>
           ))}
-
-          {/* Switch module */}
-          <div className="mt-4 pt-3 border-t border-border">
-            <p className="px-2 text-[10px] font-semibold text-text-dim uppercase tracking-wider mb-1">
-              Chuyển đổi
-            </p>
-            <button
-              onClick={handleSwitchType}
-              className="w-full text-left px-3 py-2 rounded text-xs text-text-muted hover:bg-surface-2 hover:text-text border border-border transition-colors cursor-pointer"
-            >
-              {currentType === 'cafe' ? 'Đổi sang Tạp hoá' : 'Đổi sang Quán Cafe'}
-            </button>
-          </div>
 
           {/* Utilities */}
           <div className="mt-4 pt-3 border-t border-border">

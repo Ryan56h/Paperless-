@@ -23,6 +23,13 @@ import CustomerInvoice from './pages/CustomerInvoice';
 import InvoiceLookup from './pages/InvoiceLookup';
 import ManagerDashboard from './pages/ManagerDashboard';
 import LoyaltyVoucher from './pages/LoyaltyVoucher';
+import { useAuth } from './context/AuthContext';
+
+function AppRedirect() {
+  const { business, user } = useAuth();
+  const type = business?.type || user?.businessType || 'grocery';
+  return <Navigate to={type === 'cafe' ? '/app/cafe/order' : '/app/grocery/order'} replace />;
+}
 
 export default function App() {
   return (
@@ -34,6 +41,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/app" element={<AppRedirect />} />
 
             {/* Grocery Business Module */}
             <Route path="/app/grocery/order" element={<GroceryOrderPage />} />
