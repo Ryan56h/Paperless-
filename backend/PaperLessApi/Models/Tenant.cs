@@ -15,6 +15,15 @@ public class Tenant
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(50)]
+    public string BusinessType { get; set; } = "grocery";
+
+    [MaxLength(100)]
+    public string OwnerName { get; set; } = string.Empty;
+
+    [MaxLength(255)]
+    public string Address { get; set; } = string.Empty;
+
+    [MaxLength(50)]
     public string? TaxCode { get; set; }
 
     [Required]

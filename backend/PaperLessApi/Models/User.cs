@@ -30,7 +30,7 @@ public class User
 
     [Required]
     [MaxLength(20)]
-    public string Role { get; set; } = "staff"; // super_admin | owner | manager | staff
+    public string Role { get; set; } = "staff";
 
     public string? BranchId { get; set; }
     public Branch? Branch { get; set; }

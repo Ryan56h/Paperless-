@@ -11,7 +11,7 @@ namespace PaperLessApi.Services;
 
 public interface ITokenService
 {
-    string GenerateToken(User user, string? tenantName);
+    string GenerateToken(User user, string? tenantName, string? businessType = null);
 }
 
 public class TokenService : ITokenService
@@ -23,7 +23,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string GenerateToken(User user, string? tenantName)
+    public string GenerateToken(User user, string? tenantName, string? businessType = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -37,6 +37,7 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.Role, user.Role),
             new Claim("tenant_id", user.TenantId ?? string.Empty),
             new Claim("tenant_name", tenantName ?? string.Empty),
+            new Claim("business_type", businessType ?? "grocery"),
             new Claim("branch_id", user.BranchId ?? string.Empty)
         };
 

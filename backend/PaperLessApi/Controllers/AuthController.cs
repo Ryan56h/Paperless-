@@ -27,6 +27,10 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
+        var storeName = request.GetStoreName();
+        var ownerName = request.GetOwnerName();
+        var businessType = !string.IsNullOrWhiteSpace(request.Type) ? request.Type.ToLower() : "grocery";
+
         var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
         if (emailExists)
         {
@@ -38,7 +42,11 @@ public class AuthController : ControllerBase
 
         var tenant = new Tenant
         {
-            Name = request.StoreName,
+            Name = storeName,
+            BusinessType = businessType,
+            OwnerName = ownerName,
+            Address = request.Address ?? string.Empty,
+            TaxCode = request.TaxCode,
             Email = request.Email,
             Phone = request.Phone,
             Status = "trial",
@@ -50,7 +58,7 @@ public class AuthController : ControllerBase
         {
             TenantId = tenant.Id,
             Name = "Trụ sở chính",
-            Address = "Chưa cập nhật"
+            Address = !string.IsNullOrWhiteSpace(request.Address) ? request.Address : "Chưa cập nhật"
         };
         _context.Branches.Add(branch);
 
@@ -58,7 +66,7 @@ public class AuthController : ControllerBase
         {
             TenantId = tenant.Id,
             BranchId = branch.Id,
-            FullName = request.OwnerFullName,
+            FullName = ownerName,
             Email = request.Email,
             Phone = request.Phone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
@@ -68,7 +76,7 @@ public class AuthController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var token = _tokenService.GenerateToken(user, tenant.Name);
+        var token = _tokenService.GenerateToken(user, tenant.Name, tenant.BusinessType);
 
         return Ok(new LoginResponse
         {
@@ -82,7 +90,20 @@ public class AuthController : ControllerBase
                 Role = user.Role,
                 TenantId = tenant.Id,
                 TenantName = tenant.Name,
+                BusinessType = tenant.BusinessType,
                 BranchId = branch.Id
+            },
+            Business = new BusinessProfileDto
+            {
+                Id = tenant.Id,
+                Name = tenant.Name,
+                Type = tenant.BusinessType,
+                OwnerName = tenant.OwnerName,
+                Phone = tenant.Phone,
+                Email = tenant.Email,
+                Address = tenant.Address,
+                TaxCode = tenant.TaxCode,
+                CreatedAt = tenant.CreatedAt.ToString("yyyy-MM-dd")
             }
         });
     }
@@ -90,7 +111,12 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        var input = request.EmailOrPhone.Trim().ToLower();
+        var input = request.GetIdentifier().ToLower();
+        if (string.IsNullOrEmpty(input))
+        {
+            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+        }
+
         var user = await _context.Users
             .Include(u => u.Tenant)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == input || u.Phone == input);
@@ -115,7 +141,20 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không chính xác." });
         }
 
-        var token = _tokenService.GenerateToken(user, user.Tenant?.Name);
+        var token = _tokenService.GenerateToken(user, user.Tenant?.Name, user.Tenant?.BusinessType);
+
+        var businessDto = user.Tenant != null ? new BusinessProfileDto
+        {
+            Id = user.Tenant.Id,
+            Name = user.Tenant.Name,
+            Type = user.Tenant.BusinessType,
+            OwnerName = user.Tenant.OwnerName,
+            Phone = user.Tenant.Phone,
+            Email = user.Tenant.Email,
+            Address = user.Tenant.Address,
+            TaxCode = user.Tenant.TaxCode,
+            CreatedAt = user.Tenant.CreatedAt.ToString("yyyy-MM-dd")
+        } : null;
 
         return Ok(new LoginResponse
         {
@@ -129,14 +168,16 @@ public class AuthController : ControllerBase
                 Role = user.Role,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name,
+                BusinessType = user.Tenant?.BusinessType,
                 BranchId = user.BranchId
-            }
+            },
+            Business = businessDto
         });
     }
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<UserDto>> GetMe()
+    public async Task<ActionResult<object>> GetMe()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? User.FindFirstValue("sub");
@@ -155,16 +196,34 @@ public class AuthController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new UserDto
+        var businessDto = user.Tenant != null ? new BusinessProfileDto
         {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Phone = user.Phone,
-            Role = user.Role,
-            TenantId = user.TenantId,
-            TenantName = user.Tenant?.Name,
-            BranchId = user.BranchId
+            Id = user.Tenant.Id,
+            Name = user.Tenant.Name,
+            Type = user.Tenant.BusinessType,
+            OwnerName = user.Tenant.OwnerName,
+            Phone = user.Tenant.Phone,
+            Email = user.Tenant.Email,
+            Address = user.Tenant.Address,
+            TaxCode = user.Tenant.TaxCode,
+            CreatedAt = user.Tenant.CreatedAt.ToString("yyyy-MM-dd")
+        } : null;
+
+        return Ok(new
+        {
+            user = new UserDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Phone = user.Phone,
+                Role = user.Role,
+                TenantId = user.TenantId,
+                TenantName = user.Tenant?.Name,
+                BusinessType = user.Tenant?.BusinessType,
+                BranchId = user.BranchId
+            },
+            business = businessDto
         });
     }
 }
