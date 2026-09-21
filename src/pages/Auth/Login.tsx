@@ -11,7 +11,6 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [businessType, setBusinessType] = useState<BusinessType>('grocery');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +32,7 @@ export default function Login() {
 
     setIsSubmitting(true);
     try {
-      const result = await login(email.trim(), password, businessType);
+      const result = await login(email.trim(), password);
       if (result.success) {
         if (result.businessType === 'cafe') {
           navigate('/app/cafe/order');
