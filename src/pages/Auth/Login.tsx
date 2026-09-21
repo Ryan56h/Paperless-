@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
+import { validateEmail, validatePassword } from '../../utils/validators';
 import type { BusinessType } from '../../types';
 
 export default function Login() {
@@ -17,9 +18,22 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setErrorMessage(emailErr);
+      return;
+    }
+
+    const passErr = validatePassword(password);
+    if (passErr) {
+      setErrorMessage(passErr);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const result = await login(email, password, businessType);
+      const result = await login(email.trim(), password, businessType);
       if (result.success) {
         if (result.businessType === 'cafe') {
           navigate('/app/cafe/order');
@@ -105,34 +119,7 @@ export default function Login() {
 
       {/* Form */}
       <form onSubmit={handleLogin} className="space-y-3.5">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">
-            Loại hình cửa hàng
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setBusinessType('grocery')}
-              className={`py-1.5 px-3 rounded text-xs font-medium border text-center cursor-pointer transition-colors ${businessType === 'grocery'
-                  ? 'bg-text text-bg border-text font-semibold'
-                  : 'bg-surface-2 border-border text-text-muted hover:text-text'
-                }`}
-            >
-              Tạp hoá
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setBusinessType('cafe')}
-              className={`py-1.5 px-3 rounded text-xs font-medium border text-center cursor-pointer transition-colors ${businessType === 'cafe'
-                  ? 'bg-text text-bg border-text font-semibold'
-                  : 'bg-surface-2 border-border text-text-muted hover:text-text'
-                }`}
-            >
-              Quán Cafe
-            </button>
-          </div>
-        </div>
+        
 
         <div>
           <label className="block text-xs font-medium text-text mb-1">

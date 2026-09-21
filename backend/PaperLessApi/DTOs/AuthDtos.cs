@@ -7,7 +7,8 @@ public class LoginRequest
     public string? Email { get; set; }
     public string? EmailOrPhone { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+    [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
     public string Password { get; set; } = string.Empty;
 
     public string? BusinessType { get; set; }
@@ -20,33 +21,53 @@ public class LoginRequest
     }
 }
 
+public class SendRegisterOtpRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập địa chỉ email.")]
+    [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng (VD: cuahang@gmail.com).")]
+    [MaxLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
+    public string Email { get; set; } = string.Empty;
+
+    [MaxLength(100, ErrorMessage = "Họ tên không được vượt quá 100 ký tự.")]
+    public string? FullName { get; set; }
+}
+
 public class RegisterRequest
 {
+    [Required(ErrorMessage = "Vui lòng nhập tên cửa hàng.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Tên cửa hàng phải có từ 2 đến 100 ký tự.")]
     public string? Name { get; set; }
     public string? StoreName { get; set; }
 
     public string Type { get; set; } = "grocery";
 
+    [Required(ErrorMessage = "Vui lòng nhập họ và tên chủ quán.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Họ và tên chủ quán phải có từ 2 đến 100 ký tự.")]
     public string? OwnerName { get; set; }
     public string? OwnerFullName { get; set; }
 
-    [Required]
-    [EmailAddress]
+    [Required(ErrorMessage = "Vui lòng nhập địa chỉ email.")]
+    [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
+    [MaxLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
-    [MaxLength(20)]
+    [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+    [RegularExpression(@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).")]
     public string Phone { get; set; } = string.Empty;
 
-    [Required]
-    [MinLength(6)]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+    [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu phải có độ dài từ 6 đến 50 ký tự.")]
     public string Password { get; set; } = string.Empty;
 
-    [MaxLength(255)]
+    [MaxLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự.")]
     public string? Address { get; set; }
 
-    [MaxLength(50)]
+    [MaxLength(50, ErrorMessage = "Mã số thuế không được vượt quá 50 ký tự.")]
     public string? TaxCode { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng nhập mã xác thực OTP.")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã xác thực OTP phải gồm đúng 6 chữ số.")]
+    public string OtpCode { get; set; } = string.Empty;
 
     public string GetStoreName()
     {
@@ -97,30 +118,55 @@ public class LoginResponse
 
 public class ForgotPasswordRequest
 {
-    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
-    public string EmailOrPhone { get; set; } = string.Empty;
+    [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
+    [MaxLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
+    public string? Email { get; set; }
+    public string? EmailOrPhone { get; set; }
+
+    public string GetEmail()
+    {
+        if (!string.IsNullOrWhiteSpace(Email)) return Email.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(EmailOrPhone)) return EmailOrPhone.Trim().ToLower();
+        return string.Empty;
+    }
 }
 
 public class VerifyResetCodeRequest
 {
-    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
-    public string EmailOrPhone { get; set; } = string.Empty;
+    [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
+    public string? Email { get; set; }
+    public string? EmailOrPhone { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập mã xác nhận.")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã xác nhận gồm 6 chữ số.")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã xác nhận gồm đúng 6 chữ số.")]
     public string Code { get; set; } = string.Empty;
+
+    public string GetEmail()
+    {
+        if (!string.IsNullOrWhiteSpace(Email)) return Email.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(EmailOrPhone)) return EmailOrPhone.Trim().ToLower();
+        return string.Empty;
+    }
 }
 
 public class ResetPasswordRequest
 {
-    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
-    public string EmailOrPhone { get; set; } = string.Empty;
+    [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
+    public string? Email { get; set; }
+    public string? EmailOrPhone { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập mã xác nhận.")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã xác nhận gồm 6 chữ số.")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã xác nhận gồm đúng 6 chữ số.")]
     public string Code { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
-    [MinLength(6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.")]
+    [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu mới phải có độ dài từ 6 đến 50 ký tự.")]
     public string NewPassword { get; set; } = string.Empty;
+
+    public string GetEmail()
+    {
+        if (!string.IsNullOrWhiteSpace(Email)) return Email.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(EmailOrPhone)) return EmailOrPhone.Trim().ToLower();
+        return string.Empty;
+    }
 }

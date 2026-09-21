@@ -29,6 +29,7 @@ export interface RegisterPayload {
   password?: string;
   address?: string;
   taxCode?: string;
+  otpCode: string;
 }
 
 export async function loginApi(
@@ -62,6 +63,31 @@ export async function loginApi(
   return response.json();
 }
 
+export async function sendRegisterOtpApi(email: string, fullName?: string): Promise<{ message: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/send-register-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        fullName,
+      }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra lại server.');
+  }
+
+  const errorData = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(errorData.message || `Gửi mã OTP thất bại (${response.status})`);
+  }
+
+  return errorData;
+}
+
 export async function registerApi(payload: RegisterPayload): Promise<AuthResponse> {
   let response: Response;
   try {
@@ -81,6 +107,7 @@ export async function registerApi(payload: RegisterPayload): Promise<AuthRespons
         password: payload.password || '123456',
         address: payload.address,
         taxCode: payload.taxCode,
+        otpCode: payload.otpCode,
       }),
     });
   } catch {
@@ -117,10 +144,11 @@ export async function getMeApi(token: string): Promise<{ user: UserResponse; bus
 export interface ForgotPasswordResponse {
   message: string;
   identifier: string;
+  email?: string;
   resetCode?: string;
 }
 
-export async function forgotPasswordApi(emailOrPhone: string): Promise<ForgotPasswordResponse> {
+export async function forgotPasswordApi(email: string): Promise<ForgotPasswordResponse> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}/auth/forgot-password`, {
@@ -128,7 +156,7 @@ export async function forgotPasswordApi(emailOrPhone: string): Promise<ForgotPas
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ emailOrPhone }),
+      body: JSON.stringify({ email }),
     });
   } catch {
     throw new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra lại server.');
@@ -142,7 +170,7 @@ export async function forgotPasswordApi(emailOrPhone: string): Promise<ForgotPas
   return data;
 }
 
-export async function verifyResetCodeApi(emailOrPhone: string, code: string): Promise<{ message: string }> {
+export async function verifyResetCodeApi(email: string, code: string): Promise<{ message: string }> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}/auth/verify-reset-code`, {
@@ -150,7 +178,7 @@ export async function verifyResetCodeApi(emailOrPhone: string, code: string): Pr
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ emailOrPhone, code }),
+      body: JSON.stringify({ email, code }),
     });
   } catch {
     throw new Error('Không thể kết nối đến máy chủ Backend.');
@@ -165,7 +193,7 @@ export async function verifyResetCodeApi(emailOrPhone: string, code: string): Pr
 }
 
 export async function resetPasswordApi(
-  emailOrPhone: string,
+  email: string,
   code: string,
   newPassword: string
 ): Promise<{ message: string }> {
@@ -176,7 +204,7 @@ export async function resetPasswordApi(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ emailOrPhone, code, newPassword }),
+      body: JSON.stringify({ email, code, newPassword }),
     });
   } catch {
     throw new Error('Không thể kết nối đến máy chủ Backend.');
