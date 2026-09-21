@@ -133,30 +133,30 @@ export default function ZaloPreview({
           )}
 
           {/* Total Price Section */}
-          <div className="border-t border-gray-150 pt-3 pb-3 flex justify-between items-center mb-3">
+          <div className="border-t border-gray-100 pt-3 pb-3 flex justify-between items-center mb-3">
             <span className="text-xs text-gray-500 font-bold">Tổng thanh toán:</span>
-            <span className="text-base text-[#55C244] font-black">{total.toLocaleString('vi-VN')} VNĐ</span>
+            <span className="text-base text-gray-900 font-black">{total.toLocaleString('vi-VN')} VNĐ</span>
           </div>
 
           {/* Survey/Promotion Text Note */}
-          <p className="text-[11px] text-gray-400 leading-normal mb-5">
+          <p className="text-[11px] text-gray-400 leading-normal mb-4">
             Với nỗ lực không ngừng nâng cao trải nghiệm mua sắm của khách hàng, mời Quý khách dành ít phút tham gia khảo sát chất lượng dịch vụ. Trân trọng!
           </p>
 
           {/* Stacked Action Buttons */}
-          <div className="flex flex-col gap-2.5">
-            {/* Button 1: View Details (Primary Solid Brand Green) */}
+          <div className="flex flex-col gap-2">
+            {/* Button 1: View Details */}
             <Link
               to={`/invoice/${invoiceId}`}
-              className="w-full text-center py-3 text-xs font-bold text-black bg-[#55C244] hover:bg-[#45a837] rounded-xl tracking-wider uppercase transition-colors shadow-sm"
+              className="w-full text-center py-2.5 text-xs font-bold text-white bg-[#0068FF] hover:bg-[#0055d6] rounded-xl tracking-wider uppercase transition-colors shadow-sm"
             >
               XEM CHI TIẾT HÓA ĐƠN
             </Link>
 
-            {/* Button 2: View All (Secondary Light Brand Green) */}
+            {/* Button 2: View All */}
             <Link
               to="/lookup"
-              className="w-full text-center py-3 text-xs font-bold text-[#55C244] bg-[#55C244]/10 hover:bg-[#55C244]/20 border border-[#55C244]/20 rounded-xl tracking-wider uppercase transition-colors"
+              className="w-full text-center py-2.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl tracking-wider uppercase transition-colors"
             >
               XEM TẤT CẢ HÓA ĐƠN
             </Link>

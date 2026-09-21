@@ -120,7 +120,7 @@ export default function StaffOrder() {
               <p className="text-text-dim text-sm mt-0.5">Chọn món nước hoặc bánh ngọt để bắt đầu order</p>
             </div>
             <div className="text-right">
-              <span className="inline-block px-3 py-1 bg-surface-2 border border-border rounded-full text-xs font-semibold text-[#55C244]">
+              <span className="inline-block px-3 py-1 bg-surface-2 border border-border rounded-full text-xs font-medium text-text-muted">
                 FreshMart Chi nhánh Q1
               </span>
             </div>
@@ -132,9 +132,9 @@ export default function StaffOrder() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer border ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer border ${
                   selectedCategory === cat
-                    ? 'bg-[#55C244]/15 border-[#55C244]/40 text-[#55C244]'
+                    ? 'bg-text text-bg border-text'
                     : 'bg-surface-2 border-border text-text-muted hover:text-text'
                 }`}
               >
@@ -149,7 +149,7 @@ export default function StaffOrder() {
               <div
                 key={p.id}
                 onClick={() => addToCart(p)}
-                className="bg-surface-2 border border-border hover:border-[#55C244]/40 rounded-xl p-4 cursor-pointer flex flex-col justify-between h-32"
+                className="bg-surface-2 border border-border hover:border-text/40 rounded-xl p-4 cursor-pointer flex flex-col justify-between h-32"
               >
                 <div>
                   <span className="text-[10px] text-text-dim uppercase tracking-wider block font-semibold mb-1">
@@ -158,7 +158,7 @@ export default function StaffOrder() {
                   <h3 className="text-text font-medium text-sm leading-tight">{p.name}</h3>
                 </div>
                 <div className="flex justify-between items-center mt-2 border-t border-border pt-2">
-                  <span className="text-[#55C244] font-bold text-sm">
+                  <span className="text-text font-bold text-sm">
                     {p.price.toLocaleString('vi-VN')}đ
                   </span>
                   <span className="text-[10px] text-text-dim font-mono">{p.id}</span>
@@ -195,19 +195,19 @@ export default function StaffOrder() {
                 <div key={item.id} className="flex justify-between items-center bg-surface-2 p-3 rounded-lg border border-border">
                   <div className="flex-1 pr-2">
                     <p className="text-text text-xs font-semibold leading-tight">{item.name}</p>
-                    <p className="text-[#55C244] text-[11px] mt-1">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
+                    <p className="text-text font-medium text-[11px] mt-1">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.id, -1)}
-                      className="w-6 h-6 rounded bg-border text-text flex items-center justify-center text-xs hover:bg-[#3A3A3A] cursor-pointer"
+                      className="w-6 h-6 rounded bg-border text-text flex items-center justify-center text-xs hover:bg-surface cursor-pointer"
                     >
                       -
                     </button>
                     <span className="text-text text-xs font-mono font-bold w-4 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, 1)}
-                      className="w-6 h-6 rounded bg-border text-text flex items-center justify-center text-xs hover:bg-[#3A3A3A] cursor-pointer"
+                      className="w-6 h-6 rounded bg-border text-text flex items-center justify-center text-xs hover:bg-surface cursor-pointer"
                     >
                       +
                     </button>
@@ -231,7 +231,7 @@ export default function StaffOrder() {
                   onChange={e => setCreateReceipt(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#9CA3AF] peer-checked:after:bg-bg after:rounded-full after:h-4 after:w-4 peer-checked:bg-[#55C244]" />
+                <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted peer-checked:after:bg-bg after:rounded-full after:h-4 after:w-4 peer-checked:bg-text" />
               </label>
             </div>
 
@@ -243,8 +243,8 @@ export default function StaffOrder() {
                   onClick={() => setPayMethod('cash')}
                   className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border cursor-pointer ${
                     payMethod === 'cash'
-                      ? 'bg-[#55C244]/15 border-[#55C244]/40 text-[#55C244]'
-                      : 'border-border text-text-muted hover:text-text'
+                      ? 'bg-text text-bg border-text'
+                      : 'border-border text-text-muted hover:text-text bg-surface'
                   }`}
                 >
                   Tiền mặt
@@ -253,8 +253,8 @@ export default function StaffOrder() {
                   onClick={() => setPayMethod('vietqr')}
                   className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border cursor-pointer ${
                     payMethod === 'vietqr'
-                      ? 'bg-[#55C244]/15 border-[#55C244]/40 text-[#55C244]'
-                      : 'border-border text-text-muted hover:text-text'
+                      ? 'bg-text text-bg border-text'
+                      : 'border-border text-text-muted hover:text-text bg-surface'
                   }`}
                 >
                   VietQR
@@ -273,9 +273,9 @@ export default function StaffOrder() {
               <span>Thuế VAT (10%)</span>
               <span>{tax.toLocaleString('vi-VN')}đ</span>
             </div>
-            <div className="flex justify-between text-sm pt-2 border-t border-border mt-1">
+            <div className="flex justify-between text-sm pt-2 border-t border-border mt-1 items-center">
               <span className="text-text font-bold">Tổng thanh toán</span>
-              <span className="text-[#55C244] font-bold text-base">{total.toLocaleString('vi-VN')}đ</span>
+              <span className="text-text font-bold text-base">{total.toLocaleString('vi-VN')}đ</span>
             </div>
           </div>
 
@@ -296,8 +296,8 @@ export default function StaffOrder() {
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-surface-2 border border-border rounded-2xl p-6 w-full max-w-sm text-center">
-            <div className="w-12 h-12 rounded-full bg-[#55C244]/20 border border-[#55C244] flex items-center justify-center mx-auto mb-4">
-              <span className="text-[#55C244] text-lg font-bold">✓</span>
+            <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mx-auto mb-4">
+              <span className="text-text text-lg font-bold">✓</span>
             </div>
             <h3 className="text-text font-bold text-base mb-2">Thanh toán thành công</h3>
             <p className="text-text-muted text-xs mb-6">Đã ghi nhận giao dịch & hoàn tất in hóa đơn giấy truyền thống.</p>
@@ -350,8 +350,8 @@ export default function StaffOrder() {
                       })}
                     </div>
                     {/* Mock VietQR brand tag at center */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-[#55C244] rounded flex items-center justify-center">
-                      <span className="text-[8px] font-black text-[#55C244]">P+</span>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-black rounded flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-black">P</span>
                     </div>
                   </div>
 
@@ -366,7 +366,7 @@ export default function StaffOrder() {
                     </div>
                     <div className="flex justify-between">
                       <span>Số tiền:</span>
-                      <span className="text-brand font-bold">{total.toLocaleString('vi-VN')}đ</span>
+                      <span className="text-text font-bold">{total.toLocaleString('vi-VN')}đ</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Nội dung:</span>
@@ -375,9 +375,8 @@ export default function StaffOrder() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 mb-5 text-xs text-[#F59E0B] font-semibold">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#F59E0B] animate-ping" />
-                  <span>🔄 Đang chờ thanh toán qua PayOS...</span>
+                <div className="flex items-center justify-center gap-2 mb-5 text-xs text-text-muted font-medium">
+                  <span>Đang chờ thanh toán qua PayOS...</span>
                 </div>
 
                 <div className="flex gap-2 w-full">
@@ -395,12 +394,12 @@ export default function StaffOrder() {
               </>
             ) : (
               <div className="py-8 flex flex-col items-center justify-center w-full">
-                <div className="w-16 h-16 rounded-full bg-[#55C244]/20 border-2 border-[#55C244] flex items-center justify-center mb-4">
-                  <span className="text-[#55C244] text-2xl font-bold">✓</span>
+                <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mb-4">
+                  <span className="text-text text-xl font-bold">✓</span>
                 </div>
                 <h3 className="text-text font-bold text-base mb-2">Thanh toán thành công!</h3>
                 <p className="text-text-muted text-xs">PayOS đã ghi nhận giao dịch thành công qua Webhook.</p>
-                <p className="text-[#55C244] text-[11px] font-mono mt-2 animate-pulse">Đang tự động in hóa đơn giấy...</p>
+                <p className="text-text-dim text-[11px] font-mono mt-2">Đang tự động in hóa đơn...</p>
               </div>
             )}
           </div>

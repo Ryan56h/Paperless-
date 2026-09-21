@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PaperLessApi.Models;
 
@@ -8,6 +9,15 @@ public class Invoice
 {
     [Key]
     public string Id { get; set; } = string.Empty;
+
+    [Required]
+    public string TenantId { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public Tenant? Tenant { get; set; }
+
+    public string? BranchId { get; set; }
+    public Branch? Branch { get; set; }
 
     public string? CustomerId { get; set; }
     public Customer? Customer { get; set; }
@@ -21,7 +31,10 @@ public class Invoice
     public string CustomerPhone { get; set; } = string.Empty;
 
     [MaxLength(100)]
-    public string Branch { get; set; } = "Chi nhánh Q1";
+    public string BranchName { get; set; } = "Chi nhánh Q1";
+
+    public string? StaffId { get; set; }
+    public User? Staff { get; set; }
 
     [MaxLength(100)]
     public string StaffName { get; set; } = "Nguyễn Bảo Trân";
@@ -42,6 +55,9 @@ public class Invoice
 
     [MaxLength(20)]
     public string SendStatus { get; set; } = "sent";
+
+    [MaxLength(100)]
+    public string PublicToken { get; set; } = Guid.NewGuid().ToString("N");
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

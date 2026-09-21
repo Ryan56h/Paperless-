@@ -22,6 +22,35 @@ namespace PaperLessApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("PaperLessApi.Models.Branch", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Branches");
+                });
+
             modelBuilder.Entity("PaperLessApi.Models.Customer", b =>
                 {
                     b.Property<string>("Id")
@@ -43,6 +72,10 @@ namespace PaperLessApi.Migrations
                     b.Property<int>("Points")
                         .HasColumnType("integer");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Tier")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -56,7 +89,7 @@ namespace PaperLessApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Phone")
+                    b.HasIndex("TenantId", "Phone")
                         .IsUnique();
 
                     b.ToTable("Customers");
@@ -67,7 +100,10 @@ namespace PaperLessApi.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Branch")
+                    b.Property<string>("BranchId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BranchName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -101,6 +137,11 @@ namespace PaperLessApi.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("PublicToken")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("SendChannel")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -110,6 +151,9 @@ namespace PaperLessApi.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StaffId")
+                        .HasColumnType("text");
 
                     b.Property<string>("StaffName")
                         .IsRequired()
@@ -122,12 +166,22 @@ namespace PaperLessApi.Migrations
                     b.Property<long>("Tax")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<long>("Total")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BranchId");
+
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("Invoices");
                 });
@@ -199,6 +253,33 @@ namespace PaperLessApi.Migrations
                     b.ToTable("NotificationLogs");
                 });
 
+            modelBuilder.Entity("PaperLessApi.Models.Plan", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MaxInvoicesMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxMsgMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Plans");
+                });
+
             modelBuilder.Entity("PaperLessApi.Models.Product", b =>
                 {
                     b.Property<string>("Id")
@@ -223,9 +304,159 @@ namespace PaperLessApi.Migrations
                     b.Property<long>("Price")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId");
+
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Subscription", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlanId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Subscriptions");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Tenant", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("BusinessType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("OwnerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("PlanId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TaxCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ZaloOaId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.User", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BranchId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BusinessType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TenantId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PaperLessApi.Models.Voucher", b =>
@@ -265,24 +496,70 @@ namespace PaperLessApi.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("UsageCount")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
                     b.ToTable("Vouchers");
                 });
 
+            modelBuilder.Entity("PaperLessApi.Models.Branch", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany("Branches")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Customer", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("PaperLessApi.Models.Invoice", b =>
                 {
+                    b.HasOne("PaperLessApi.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId");
+
                     b.HasOne("PaperLessApi.Models.Customer", "Customer")
                         .WithMany("Invoices")
                         .HasForeignKey("CustomerId");
 
+                    b.HasOne("PaperLessApi.Models.User", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId");
+
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
                     b.Navigation("Customer");
+
+                    b.Navigation("Staff");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("PaperLessApi.Models.InvoiceItem", b =>
@@ -307,6 +584,71 @@ namespace PaperLessApi.Migrations
                     b.Navigation("Invoice");
                 });
 
+            modelBuilder.Entity("PaperLessApi.Models.Product", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Subscription", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Plan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Tenant", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Plan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId");
+
+                    b.Navigation("Plan");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.User", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId");
+
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany("Users")
+                        .HasForeignKey("TenantId");
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Voucher", b =>
+                {
+                    b.HasOne("PaperLessApi.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("PaperLessApi.Models.Customer", b =>
                 {
                     b.Navigation("Invoices");
@@ -317,6 +659,13 @@ namespace PaperLessApi.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("Logs");
+                });
+
+            modelBuilder.Entity("PaperLessApi.Models.Tenant", b =>
+                {
+                    b.Navigation("Branches");
+
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

@@ -11,6 +11,12 @@ public class Customer
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
+    public string TenantId { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public Tenant? Tenant { get; set; }
+
+    [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
 

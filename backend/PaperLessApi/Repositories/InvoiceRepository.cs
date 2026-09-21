@@ -34,6 +34,33 @@ public class InvoiceRepository : IInvoiceRepository
 
     public async Task<Invoice> AddInvoiceAsync(Invoice invoice)
     {
+        if (!string.IsNullOrEmpty(invoice.CustomerPhone))
+        {
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Phone == invoice.CustomerPhone && c.TenantId == invoice.TenantId);
+
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    TenantId = invoice.TenantId,
+                    Name = invoice.CustomerName,
+                    Phone = invoice.CustomerPhone,
+                    TotalSpent = invoice.Total,
+                    TotalOrders = 1
+                };
+                _context.Customers.Add(customer);
+            }
+            else
+            {
+                customer.Name = invoice.CustomerName;
+                customer.TotalSpent += invoice.Total;
+                customer.TotalOrders += 1;
+            }
+
+            invoice.Customer = customer;
+        }
+
         _context.Invoices.Add(invoice);
         await _context.SaveChangesAsync();
         return invoice;

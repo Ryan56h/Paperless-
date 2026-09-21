@@ -7,10 +7,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-  primary: 'bg-[#55C244] text-black font-semibold hover:bg-[#3DA832] border border-[#55C244]',
-  secondary: 'bg-surface-2 text-text font-medium hover:bg-surface-2 border border-border',
-  ghost: 'bg-transparent text-text-muted font-medium hover:text-text border border-border hover:border-border',
-  danger: 'bg-[#EF4444]/10 text-[#EF4444] font-medium hover:bg-[#EF4444]/20 border border-[#EF4444]/40',
+  primary: 'bg-text text-bg font-semibold hover:opacity-90 border border-text',
+  secondary: 'bg-surface-2 text-text font-medium hover:bg-surface border border-border',
+  ghost: 'bg-transparent text-text-muted font-medium hover:text-text border border-border hover:border-text/30',
+  danger: 'bg-surface-2 text-[#EF4444] font-medium hover:bg-surface border border-[#EF4444]/30',
 };
 
 const sizeClasses = {
