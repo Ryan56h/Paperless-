@@ -150,7 +150,12 @@ export default function Login() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-text mb-1">Mật khẩu</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-medium text-text">Mật khẩu</label>
+            <Link to="/forgot-password" className="text-[11px] text-text-muted hover:text-text hover:underline">
+              Quên mật khẩu?
+            </Link>
+          </div>
           <input
             type="password"
             required

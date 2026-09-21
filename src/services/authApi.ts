@@ -113,3 +113,79 @@ export async function getMeApi(token: string): Promise<{ user: UserResponse; bus
 
   return response.json();
 }
+
+export interface ForgotPasswordResponse {
+  message: string;
+  identifier: string;
+  resetCode?: string;
+}
+
+export async function forgotPasswordApi(emailOrPhone: string): Promise<ForgotPasswordResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ emailOrPhone }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra lại server.');
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || `Yêu cầu thất bại (${response.status})`);
+  }
+
+  return data;
+}
+
+export async function verifyResetCodeApi(emailOrPhone: string, code: string): Promise<{ message: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ emailOrPhone, code }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend.');
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || `Mã xác nhận không hợp lệ (${response.status})`);
+  }
+
+  return data;
+}
+
+export async function resetPasswordApi(
+  emailOrPhone: string,
+  code: string,
+  newPassword: string
+): Promise<{ message: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ emailOrPhone, code, newPassword }),
+    });
+  } catch {
+    throw new Error('Không thể kết nối đến máy chủ Backend.');
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || `Đặt lại mật khẩu thất bại (${response.status})`);
+  }
+
+  return data;
+}

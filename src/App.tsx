@@ -6,6 +6,7 @@ import { OrderProvider } from './context/OrderContext';
 import LandingPage from './pages/Landing';
 import Register from './pages/Auth/Register';
 import Login from './pages/Auth/Login';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 
 import GroceryOrderPage from './pages/Grocery/OrderPage';
 import GroceryDisplayPage from './pages/Grocery/DisplayPage';
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/lookup" element={<InvoiceLookup />} />
             <Route path="/invoice/:id" element={<CustomerInvoice />} />
 

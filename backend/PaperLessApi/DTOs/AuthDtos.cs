@@ -94,3 +94,33 @@ public class LoginResponse
     public UserDto User { get; set; } = null!;
     public BusinessProfileDto? Business { get; set; }
 }
+
+public class ForgotPasswordRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    public string EmailOrPhone { get; set; } = string.Empty;
+}
+
+public class VerifyResetCodeRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    public string EmailOrPhone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập mã xác nhận.")]
+    [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã xác nhận gồm 6 chữ số.")]
+    public string Code { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    public string EmailOrPhone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập mã xác nhận.")]
+    [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã xác nhận gồm 6 chữ số.")]
+    public string Code { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+    [MinLength(6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.")]
+    public string NewPassword { get; set; } = string.Empty;
+}

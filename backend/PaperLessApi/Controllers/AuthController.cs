@@ -17,11 +17,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordResetService _passwordResetService;
 
-    public AuthController(AppDbContext context, ITokenService tokenService)
+    public AuthController(AppDbContext context, ITokenService tokenService, IPasswordResetService passwordResetService)
     {
         _context = context;
         _tokenService = tokenService;
+        _passwordResetService = passwordResetService;
     }
 
     [HttpPost("register")]
@@ -222,5 +224,79 @@ public class AuthController : ControllerBase
             },
             business = businessDto
         });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var input = request.EmailOrPhone?.Trim().ToLower();
+        if (string.IsNullOrEmpty(input))
+        {
+            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+        }
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == input || u.Phone == input);
+
+        if (user == null)
+        {
+            return NotFound(new { message = "Không tìm thấy tài khoản với email hoặc số điện thoại này." });
+        }
+
+        var code = _passwordResetService.GenerateResetCode(input);
+
+        return Ok(new
+        {
+            message = "Mã xác nhận gồm 6 chữ số đã được gửi tới tài khoản của bạn.",
+            identifier = input,
+            resetCode = code
+        });
+    }
+
+    [HttpPost("verify-reset-code")]
+    public IActionResult VerifyResetCode([FromBody] VerifyResetCodeRequest request)
+    {
+        var input = request.EmailOrPhone?.Trim().ToLower();
+        if (string.IsNullOrEmpty(input))
+        {
+            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+        }
+
+        var isValid = _passwordResetService.VerifyResetCode(input, request.Code);
+        if (!isValid)
+        {
+            return BadRequest(new { message = "Mã xác nhận không chính xác hoặc đã hết hạn." });
+        }
+
+        return Ok(new { message = "Mã xác thực hợp lệ." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var input = request.EmailOrPhone?.Trim().ToLower();
+        if (string.IsNullOrEmpty(input))
+        {
+            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+        }
+
+        var isConsumed = _passwordResetService.ConsumeResetCode(input, request.Code);
+        if (!isConsumed)
+        {
+            return BadRequest(new { message = "Mã xác nhận không hợp lệ hoặc đã hết hạn." });
+        }
+
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == input || u.Phone == input);
+
+        if (user == null)
+        {
+            return NotFound(new { message = "Không tìm thấy tài khoản hợp lệ để đặt lại mật khẩu." });
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới." });
     }
 }
