@@ -44,6 +44,18 @@ public class Invoice
     public long Tax { get; set; } = 0;
     public long Total { get; set; }
 
+    public int TicketNumber { get; set; } = 101;
+
+    public long CashGiven { get; set; } = 0;
+
+    public long ChangeDue { get; set; } = 0;
+
+    [MaxLength(20)]
+    public string OrderStatus { get; set; } = "preparing"; // preparing, ready, completed, cancelled
+
+    [MaxLength(255)]
+    public string? Note { get; set; }
+
     [MaxLength(20)]
     public string PayMethod { get; set; } = "cash";
 

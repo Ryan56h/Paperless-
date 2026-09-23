@@ -1,10 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import AppLayout from '../../../components/layout/AppLayout';
 import Button from '../../../components/common/Button';
-import { mockGroceryProducts } from '../../../data/mockData';
 import { useAuth } from '../../../context/AuthContext';
 import type { CatalogProduct } from '../../../types';
+import {
+  fetchProductsApi,
+  fetchProductCategoriesApi,
+  createInvoiceApi,
+  lookupCustomerByPhoneApi,
+  type BackendInvoice,
+} from '../../../services/groceryApi';
 
 interface CartItem {
   id: string;
@@ -12,55 +18,87 @@ interface CartItem {
   quantity: number;
   price: number;
   category: string;
+  unit?: string;
 }
 
 export default function GroceryOrderPage() {
   const navigate = useNavigate();
   const { business } = useAuth();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [categories, setCategories] = useState<string[]>(['Tất cả']);
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [payMethod, setPayMethod] = useState<'cash' | 'vietqr'>('cash');
   const [createReceipt, setCreateReceipt] = useState(false);
   const [cashGiven, setCashGiven] = useState<number>(0);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPoints, setCustomerPoints] = useState<number | null>(null);
+  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
+  const [lastCreatedInvoice, setLastCreatedInvoice] = useState<BackendInvoice | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrModalStatus, setQrModalStatus] = useState<'pending' | 'success'>('pending');
 
+  // Load products and categories from Backend
   useEffect(() => {
-    if (showQRModal && qrModalStatus === 'pending') {
-      const timer = setTimeout(() => {
-        setQrModalStatus('success');
-        const autoClose = setTimeout(() => {
-          setShowQRModal(false);
-          setQrModalStatus('pending');
-          if (createReceipt) {
-            navigate('/staff/invoice/new');
-          } else {
-            setShowSuccessModal(true);
-          }
-        }, 1200);
-        return () => clearTimeout(autoClose);
-      }, 2500);
-      return () => clearTimeout(timer);
+    let isMounted = true;
+    async function loadData() {
+      setIsLoadingProducts(true);
+      try {
+        const [prods, cats] = await Promise.all([
+          fetchProductsApi(),
+          fetchProductCategoriesApi(),
+        ]);
+        if (isMounted) {
+          setProducts(prods);
+          if (cats.length > 0) setCategories(cats);
+        }
+      } catch (err) {
+        console.error('Lỗi tải sản phẩm:', err);
+      } finally {
+        if (isMounted) setIsLoadingProducts(false);
+      }
     }
-  }, [showQRModal, qrModalStatus, createReceipt, navigate]);
-
-  const categories = useMemo(() => {
-    return ['Tất cả', ...Array.from(new Set(mockGroceryProducts.map(p => p.category)))];
+    loadData();
+    return () => { isMounted = false; };
   }, []);
 
+  // Filter products by category and search
   const filteredProducts = useMemo(() => {
-    return mockGroceryProducts.filter(p => {
+    return products.filter(p => {
       const matchCat = selectedCategory === 'Tất cả' || p.category === selectedCategory;
       const matchSearch =
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.barcode && p.barcode.includes(searchQuery));
+        (p.barcode && p.barcode.includes(searchQuery.trim()));
       return matchCat && matchSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery]);
+
+  // Lookup customer
+  const handleLookupCustomer = async () => {
+    if (!customerPhone.trim()) return;
+    setIsSearchingCustomer(true);
+    try {
+      const cust = await lookupCustomerByPhoneApi(customerPhone.trim());
+      if (cust) {
+        setCustomerName(cust.name);
+        setCustomerPoints(cust.points);
+      } else {
+        setCustomerPoints(null);
+      }
+    } catch {
+      //
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  };
 
   const addToCart = (product: CatalogProduct) => {
     setCart(prev => {
@@ -78,6 +116,7 @@ export default function GroceryOrderPage() {
           quantity: 1,
           price: product.price,
           category: product.category,
+          unit: product.unit,
         },
       ];
     });
@@ -91,40 +130,75 @@ export default function GroceryOrderPage() {
     );
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    setCashGiven(0);
+    setCustomerPhone('');
+    setCustomerName('');
+    setCustomerPoints(null);
+  };
 
   const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
   const total = subtotal;
   const changeDue = Math.max(0, cashGiven - total);
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
+  // Submit order to Backend
+  const executeCheckout = async (chosenMethod: 'cash' | 'qr') => {
+    if (cart.length === 0 || isSubmittingOrder) return;
+    setIsSubmittingOrder(true);
+    try {
+      const invoice = await createInvoiceApi({
+        customerName: customerName.trim() || undefined,
+        customerPhone: customerPhone.trim() || undefined,
+        payMethod: chosenMethod,
+        cashGiven: chosenMethod === 'cash' ? (cashGiven > 0 ? cashGiven : total) : total,
+        sendChannel: 'zalo',
+        items: cart.map(item => ({
+          productId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+      });
 
-    const orderDraft = {
-      items: cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.price,
-      })),
-      subtotal,
-      tax: 0,
-      total,
-      payMethod,
-      paymentStatus: 'paid',
-    };
-    sessionStorage.setItem('posOrderDraft', JSON.stringify(orderDraft));
+      setLastCreatedInvoice(invoice);
 
-    if (payMethod === 'vietqr') {
-      setShowQRModal(true);
-    } else {
       if (createReceipt) {
-        navigate('/staff/invoice/new');
+        navigate(`/invoice/${invoice.id}`);
       } else {
         setShowSuccessModal(true);
       }
+    } catch (err: any) {
+      alert(err.message || 'Không thể thanh toán đơn hàng.');
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
+
+  const handleCheckoutClick = () => {
+    if (cart.length === 0) return;
+    if (payMethod === 'vietqr') {
+      setShowQRModal(true);
+    } else {
+      executeCheckout('cash');
+    }
+  };
+
+  // VietQR simulation timer
+  useEffect(() => {
+    if (showQRModal && qrModalStatus === 'pending') {
+      const timer = setTimeout(() => {
+        setQrModalStatus('success');
+        const autoClose = setTimeout(() => {
+          setShowQRModal(false);
+          setQrModalStatus('pending');
+          executeCheckout('qr');
+        }, 1200);
+        return () => clearTimeout(autoClose);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showQRModal, qrModalStatus]);
 
   return (
     <AppLayout>
@@ -135,23 +209,31 @@ export default function GroceryOrderPage() {
             <div>
               <h1 className="text-base font-bold text-text">Bán hàng (POS) — Tạp hoá</h1>
               <p className="text-text-dim text-xs mt-0.5">
-                Chọn sản phẩm để thêm vào đơn hàng
+                Chọn sản phẩm hoặc quét mã vạch để thêm vào giỏ
               </p>
             </div>
-            <span className="text-xs text-text-muted px-2.5 py-1 bg-surface-2 border border-border rounded">
+            <span className="text-xs text-text-muted px-2.5 py-1 bg-surface-2 border border-border rounded font-semibold">
               {business?.name || 'Tạp Hoá Minh Phát'}
             </span>
           </div>
 
-          {/* Search */}
-          <div className="mb-3">
+          {/* Search Barcode / Name */}
+          <div className="mb-3 flex gap-2">
             <input
               type="text"
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder="Tìm theo tên sản phẩm hoặc mã vạch (Barcode)..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 rounded bg-surface-2 border border-border text-xs text-text focus:outline-none focus:border-text"
+              className="flex-1 px-3 py-2 rounded bg-surface-2 border border-border text-xs text-text focus:outline-none focus:border-text"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3 py-2 text-xs bg-surface-2 border border-border rounded text-text-muted hover:text-text cursor-pointer"
+              >
+                Xóa
+              </button>
+            )}
           </div>
 
           {/* Categories */}
@@ -171,52 +253,75 @@ export default function GroceryOrderPage() {
             ))}
           </div>
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
-            {filteredProducts.map(p => {
-              const inCartItem = cart.find(i => i.id === p.id);
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className={`p-3 rounded border transition-colors cursor-pointer flex flex-col justify-between select-none ${
-                    inCartItem
-                      ? 'bg-surface-2 border-text'
-                      : 'bg-surface border-border hover:border-text-dim'
-                  }`}
-                >
-                  <div>
-                    <span className="text-[10px] text-text-dim uppercase tracking-wider block mb-1">
-                      {p.category}
-                    </span>
-                    <h3 className="text-text font-medium text-xs leading-snug line-clamp-2">
-                      {p.name}
-                    </h3>
-                  </div>
+          {/* Loading or Product Grid */}
+          {isLoadingProducts ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-16">
+              <div className="w-8 h-8 rounded-full border-2 border-text/20 border-t-text animate-spin mb-2" />
+              <p className="text-xs text-text-muted">Đang tải sản phẩm từ máy chủ...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-16 text-text-muted text-xs">
+              <p>Không tìm thấy sản phẩm nào phù hợp.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
+              {filteredProducts.map(p => {
+                const inCartItem = cart.find(i => i.id === p.id);
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    className={`p-3 rounded border transition-colors cursor-pointer flex flex-col justify-between select-none ${
+                      inCartItem
+                        ? 'bg-surface-2 border-text'
+                        : 'bg-surface border-border hover:border-text-dim'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[10px] text-text-dim uppercase tracking-wider truncate">
+                          {p.category}
+                        </span>
+                        {p.popular && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold shrink-0">
+                            Hot
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-text font-medium text-xs leading-snug line-clamp-2">
+                        {p.name}
+                      </h3>
+                      {p.barcode && (
+                        <p className="text-[10px] text-text-dim font-mono mt-0.5">
+                          #{p.barcode}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="flex justify-between items-center mt-3 border-t border-border pt-2">
-                    <span className="text-text font-bold text-xs">
-                      {p.price.toLocaleString('vi-VN')} đ
-                    </span>
-                    {inCartItem ? (
-                      <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text">
-                        x{inCartItem.quantity}
+                    <div className="flex justify-between items-center mt-3 border-t border-border pt-2">
+                      <span className="text-text font-bold text-xs">
+                        {p.price.toLocaleString('vi-VN')} đ
                       </span>
-                    ) : (
-                      <span className="text-[11px] text-text-dim">{p.unit || 'Cái'}</span>
-                    )}
+                      {inCartItem ? (
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-text text-bg">
+                          x{inCartItem.quantity}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-text-dim">{p.unit || 'Cái'}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* RIGHT: CART */}
-        <div className="w-full lg:w-80 shrink-0 flex flex-col bg-surface p-5 border-t lg:border-t-0 overflow-y-auto">
+        {/* RIGHT: CART & CHECKOUT */}
+        <div className="w-full lg:w-84 shrink-0 flex flex-col bg-surface p-5 border-t lg:border-t-0 overflow-y-auto">
           <div className="flex justify-between items-center mb-3 border-b border-border pb-2.5">
             <div>
-              <h2 className="text-text font-bold text-sm">Đơn hàng</h2>
+              <h2 className="text-text font-bold text-sm">Giỏ hàng</h2>
               <p className="text-[11px] text-text-dim">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm
               </p>
@@ -231,8 +336,43 @@ export default function GroceryOrderPage() {
             )}
           </div>
 
+          {/* Customer Loyalty Section */}
+          <div className="mb-3 p-2.5 rounded bg-surface-2 border border-border space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-text text-[11px] uppercase tracking-wider">Khách hàng</span>
+              {customerPoints !== null && (
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
+                  {customerPoints} điểm
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1.5">
+              <input
+                type="tel"
+                placeholder="Nhập SĐT khách..."
+                value={customerPhone}
+                onChange={e => setCustomerPhone(e.target.value)}
+                onBlur={handleLookupCustomer}
+                className="flex-1 px-2.5 py-1.5 rounded bg-surface border border-border text-xs text-text focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleLookupCustomer}
+                disabled={isSearchingCustomer || !customerPhone.trim()}
+                className="px-2.5 py-1.5 rounded bg-text text-bg text-[11px] font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {isSearchingCustomer ? '...' : 'Tìm'}
+              </button>
+            </div>
+            {customerName && (
+              <div className="text-[11px] text-text-muted flex justify-between">
+                <span>Tên: <strong className="text-text">{customerName}</strong></span>
+              </div>
+            )}
+          </div>
+
           {/* Cart List */}
-          <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 min-h-[160px] max-h-[260px] lg:max-h-none">
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 min-h-[160px] max-h-[240px] lg:max-h-none">
             {cart.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center py-12 text-text-dim text-xs">
                 <p>Chưa có sản phẩm trong đơn</p>
@@ -273,11 +413,11 @@ export default function GroceryOrderPage() {
             )}
           </div>
 
-          {/* Checkout section */}
+          {/* Checkout controls */}
           <div className="border-t border-border pt-3 mt-3 space-y-3">
             {/* E-Receipt Toggle */}
             <div className="flex items-center justify-between bg-surface-2 p-2 rounded border border-border text-xs">
-              <span className="text-text-muted">Hoá đơn điện tử</span>
+              <span className="text-text-muted">Xuất & mở hoá đơn số ngay</span>
               <input
                 type="checkbox"
                 checked={createReceipt}
@@ -317,7 +457,7 @@ export default function GroceryOrderPage() {
 
             {/* Cash calculator */}
             {payMethod === 'cash' && cart.length > 0 && (
-              <div className="p-2 rounded bg-surface-2 border border-border text-xs space-y-1.5">
+              <div className="p-2.5 rounded bg-surface-2 border border-border text-xs space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-text-muted">Tiền khách đưa:</span>
                   <input
@@ -326,13 +466,13 @@ export default function GroceryOrderPage() {
                     placeholder="0"
                     value={cashGiven || ''}
                     onChange={e => setCashGiven(Number(e.target.value))}
-                    className="w-24 px-2 py-1 rounded bg-surface border border-border text-right text-xs font-bold text-text focus:outline-none"
+                    className="w-28 px-2 py-1 rounded bg-surface border border-border text-right text-xs font-bold text-text focus:outline-none"
                   />
                 </div>
                 {cashGiven > 0 && (
                   <div className="flex items-center justify-between pt-1 border-t border-border">
                     <span className="text-text-muted">Tiền thối lại:</span>
-                    <span className="font-bold text-text">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {changeDue.toLocaleString('vi-VN')} đ
                     </span>
                   </div>
@@ -350,34 +490,74 @@ export default function GroceryOrderPage() {
 
             {/* Action */}
             <Button
-              onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className="w-full justify-center text-center font-bold py-2.5 text-xs"
+              onClick={handleCheckoutClick}
+              disabled={cart.length === 0 || isSubmittingOrder}
+              className="w-full justify-center text-center font-bold py-2.5 text-xs flex items-center gap-2"
             >
-              {payMethod === 'vietqr' ? 'Quét mã VietQR' : 'Thanh toán'}
+              {isSubmittingOrder ? (
+                <>
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-bg/30 border-t-bg animate-spin" />
+                  <span>Đang xử lý đơn...</span>
+                </>
+              ) : payMethod === 'vietqr' ? (
+                'Quét mã VietQR'
+              ) : (
+                'Thanh toán'
+              )}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Success Modal */}
-      {showSuccessModal && (
+      {showSuccessModal && lastCreatedInvoice && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm text-center">
-            <h3 className="text-text font-bold text-sm mb-1">Thanh toán hoàn tất</h3>
-            <p className="text-text-muted text-xs mb-4">
-              Số tiền: {total.toLocaleString('vi-VN')} đ
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-text font-bold text-base mb-1">Thanh toán hoàn tất!</h3>
+            <p className="text-xs text-text-muted mb-3 font-mono">
+              Số phiếu gọi: <strong className="text-base text-text">#{lastCreatedInvoice.ticketNumber}</strong>
             </p>
-            <Button
-              onClick={() => {
-                setShowSuccessModal(false);
-                clearCart();
-                setCashGiven(0);
-              }}
-              className="w-full py-2 text-xs"
-            >
-              Đơn hàng mới
-            </Button>
+            <div className="p-3 bg-surface-2 rounded-lg border border-border text-xs mb-4 text-left space-y-1">
+              <div className="flex justify-between">
+                <span className="text-text-dim">Mã hoá đơn:</span>
+                <span className="font-mono font-bold text-text">{lastCreatedInvoice.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-dim">Tổng thanh toán:</span>
+                <span className="font-bold text-text">{lastCreatedInvoice.total.toLocaleString('vi-VN')} đ</span>
+              </div>
+              {lastCreatedInvoice.changeDue > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-text-dim">Tiền thối lại:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {lastCreatedInvoice.changeDue.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Link
+                to={`/invoice/${lastCreatedInvoice.id}`}
+                className="flex-1 py-2 rounded text-xs font-semibold bg-surface-2 border border-border text-text hover:bg-border/60 text-center"
+              >
+                Xem hoá đơn
+              </Link>
+              <Button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  clearCart();
+                }}
+                className="flex-1 py-2 text-xs"
+              >
+                Đơn hàng mới
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -418,11 +598,7 @@ export default function GroceryOrderPage() {
                   setTimeout(() => {
                     setShowQRModal(false);
                     setQrModalStatus('pending');
-                    if (createReceipt) {
-                      navigate('/staff/invoice/new');
-                    } else {
-                      setShowSuccessModal(true);
-                    }
+                    executeCheckout('qr');
                   }, 500);
                 }}
                 className="flex-1 py-1.5 rounded text-xs font-semibold bg-text text-bg cursor-pointer"

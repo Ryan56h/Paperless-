@@ -3,14 +3,19 @@ import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
 import { validateEmail, validatePassword } from '../../utils/validators';
-import type { BusinessType } from '../../types';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('paperless_remember_email') || '';
+  });
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return !!localStorage.getItem('paperless_remember_email');
+  });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,6 +39,12 @@ export default function Login() {
     try {
       const result = await login(email.trim(), password);
       if (result.success) {
+        if (rememberMe) {
+          localStorage.setItem('paperless_remember_email', email.trim());
+        } else {
+          localStorage.removeItem('paperless_remember_email');
+        }
+
         if (result.businessType === 'cafe') {
           navigate('/app/cafe/order');
         } else {
@@ -47,64 +58,12 @@ export default function Login() {
     }
   };
 
-  const handleQuickDemo = async (type: BusinessType) => {
-    setErrorMessage(null);
-    setIsSubmitting(true);
-    try {
-      const demoEmail = type === 'cafe' ? 'moclan.coffee@gmail.com' : 'minhphat.mart@gmail.com';
-      const result = await login(demoEmail, '123456', type);
-      if (result.success) {
-        if (result.businessType === 'cafe') {
-          navigate('/app/cafe/order');
-        } else {
-          navigate('/app/grocery/order');
-        }
-      } else {
-        setErrorMessage(result.error || 'Không thể đăng nhập tài khoản dùng thử.');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <AuthLayout
       title="Đăng nhập"
       subtitle="Đăng nhập để vào hệ thống quản lý bán hàng"
     >
-      {/* Quick Demo */}
-      <div className="mb-5 p-3 rounded bg-surface-2 border border-border">
-        <p className="text-[11px] font-semibold text-text-dim uppercase tracking-wider mb-2">
-          Dùng thử nhanh
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickDemo('grocery')}
-            className="p-2 rounded bg-surface border border-border text-xs font-medium text-text hover:bg-border/40 cursor-pointer text-left transition-colors"
-          >
-            <span className="block font-semibold">Tạp Hoá</span>
-            <span className="text-[10px] text-text-dim">Minh Phát</span>
-          </button>
 
-          <button
-            type="button"
-            onClick={() => handleQuickDemo('cafe')}
-            className="p-2 rounded bg-surface border border-border text-xs font-medium text-text hover:bg-border/40 cursor-pointer text-left transition-colors"
-          >
-            <span className="block font-semibold">Quán Cafe</span>
-            <span className="text-[10px] text-text-dim">Mộc Lan</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center mb-5">
-        <div className="border-t border-border w-full" />
-        <span className="bg-surface px-2 text-[10px] text-text-dim uppercase tracking-wider absolute">
-          Hoặc
-        </span>
-      </div>
 
       {/* Error Alert */}
       {errorMessage && (
@@ -136,21 +95,51 @@ export default function Login() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-medium text-text">Mật khẩu</label>
-            <Link to="/forgot-password" className="text-[11px] text-text-muted hover:text-text hover:underline">
-              Quên mật khẩu?
-            </Link>
+          <label className="block text-xs font-medium text-text mb-1">Mật khẩu</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              disabled={isSubmitting}
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full pl-3 pr-9 py-2 rounded bg-surface-2 border border-border text-text text-xs focus:outline-none focus:border-text disabled:opacity-50"
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text cursor-pointer p-0.5"
+              title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showPassword ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
           </div>
-          <input
-            type="password"
-            required
-            disabled={isSubmitting}
-            placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-surface-2 border border-border text-text text-xs focus:outline-none focus:border-text disabled:opacity-50"
-          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs pt-0.5">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-text-muted hover:text-text">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              className="rounded border-border bg-surface-2 text-text focus:ring-0 focus:outline-none accent-text cursor-pointer w-3.5 h-3.5"
+            />
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+          <Link to="/forgot-password" className="text-text-muted hover:text-text hover:underline text-[11px]">
+            Quên mật khẩu?
+          </Link>
         </div>
 
         <button

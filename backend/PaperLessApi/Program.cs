@@ -17,6 +17,10 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IOtpService, OtpService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IRevenueService, RevenueService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(options =>

@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useOrder } from '../../../context/OrderContext';
 import { useAuth } from '../../../context/AuthContext';
+import {
+  fetchInvoicesApi,
+  updateInvoiceStatusApi,
+  type BackendInvoice,
+} from '../../../services/groceryApi';
 
 export default function GroceryDisplayPage() {
-  const { groceryOrders, updateGroceryOrderStatus } = useOrder();
   const { business } = useAuth();
 
+  const [invoices, setInvoices] = useState<BackendInvoice[]>([]);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Clock timer
+  // Digital Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -24,6 +28,23 @@ export default function GroceryDisplayPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch active orders from Backend
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await fetchInvoicesApi('preparing,ready', 40);
+      setInvoices(data);
+    } catch (err) {
+      console.error('Lỗi tải danh sách đơn hiển thị:', err);
+    }
+  }, []);
+
+  // Initial load and polling every 4 seconds
+  useEffect(() => {
+    loadOrders();
+    const interval = setInterval(loadOrders, 4000);
+    return () => clearInterval(interval);
+  }, [loadOrders]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -34,22 +55,43 @@ export default function GroceryDisplayPage() {
     }
   };
 
-  const preparingOrders = groceryOrders.filter(o => o.status === 'preparing');
-  const readyOrders = groceryOrders.filter(o => o.status === 'ready');
-
-  const handleMarkReady = (orderId: string, ticketNum: number) => {
-    updateGroceryOrderStatus(orderId, 'ready');
-    showToast(`Đơn số #${ticketNum} đã sẵn sàng lấy hàng!`);
-  };
-
-  const handleMarkCompleted = (orderId: string, ticketNum: number) => {
-    updateGroceryOrderStatus(orderId, 'completed');
-    showToast(`Đơn số #${ticketNum} đã giao cho khách!`);
-  };
+  const preparingOrders = invoices.filter(o => o.orderStatus === 'preparing');
+  const readyOrders = invoices.filter(o => o.orderStatus === 'ready');
 
   const showToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleMarkReady = async (orderId: string, ticketNum: number) => {
+    try {
+      await updateInvoiceStatusApi(orderId, 'ready');
+      setInvoices(prev =>
+        prev.map(inv => (inv.id === orderId ? { ...inv, orderStatus: 'ready' } : inv))
+      );
+      showToast(`Phiếu số #${ticketNum} đã sẵn sàng nhận hàng!`);
+    } catch {
+      showToast('Không thể cập nhật trạng thái phiếu.');
+    }
+  };
+
+  const handleMarkCompleted = async (orderId: string, ticketNum: number) => {
+    try {
+      await updateInvoiceStatusApi(orderId, 'completed');
+      setInvoices(prev => prev.filter(inv => inv.id !== orderId));
+      showToast(`Phiếu số #${ticketNum} đã giao hoàn tất!`);
+    } catch {
+      showToast('Không thể cập nhật trạng thái phiếu.');
+    }
+  };
+
+  const formatTime = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
   };
 
   return (
@@ -75,7 +117,7 @@ export default function GroceryDisplayPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-text tracking-tight">
-                {business?.name || 'Tạp hoá & Siêu thị'}
+                {business?.name || 'Tạp hoá & Siêu thị Minh Phát'}
               </h1>
               <span className="text-[10px] px-2 py-0.5 rounded bg-surface-2 text-text-muted font-medium border border-border">
                 Màn hình nhận hàng
@@ -125,27 +167,30 @@ export default function GroceryDisplayPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {preparingOrders.map(order => (
-                <div
-                  key={order.id}
-                  onClick={() => handleMarkReady(order.id, order.ticketNumber)}
-                  className="group relative p-4 rounded-xl bg-surface border border-border hover:border-text/40 transition-all cursor-pointer flex flex-col justify-between text-center"
-                  title="Click để chuyển sang ĐÃ SẴN SÀNG"
-                >
-                  <span className="text-xs text-text-dim block font-medium">Phiếu số</span>
-                  <div className="text-3xl font-bold text-text my-1 font-mono tracking-tight">
-                    #{order.ticketNumber}
-                  </div>
-                  <div className="text-[11px] text-text-dim pt-2 border-t border-border flex justify-between">
-                    <span>{order.itemCount} món</span>
-                    <span className="text-text-muted">{order.createdAt}</span>
-                  </div>
+              {preparingOrders.map(order => {
+                const itemCount = order.items.reduce((sum, it) => sum + it.quantity, 0);
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => handleMarkReady(order.id, order.ticketNumber)}
+                    className="group relative p-4 rounded-xl bg-surface border border-border hover:border-text/40 transition-all cursor-pointer flex flex-col justify-between text-center"
+                    title="Click để chuyển sang ĐÃ SẴN SÀNG"
+                  >
+                    <span className="text-xs text-text-dim block font-medium">Phiếu số</span>
+                    <div className="text-3xl font-bold text-text my-1 font-mono tracking-tight">
+                      #{order.ticketNumber}
+                    </div>
+                    <div className="text-[11px] text-text-dim pt-2 border-t border-border flex justify-between">
+                      <span>{itemCount} món</span>
+                      <span className="text-text-muted">{formatTime(order.createdAt)}</span>
+                    </div>
 
-                  <div className="mt-2 text-[10px] text-text font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                    Chạm: Đã Xong ✓
+                    <div className="mt-2 text-[10px] text-text font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      Chạm: Đã Xong ✓
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -168,27 +213,30 @@ export default function GroceryDisplayPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {readyOrders.map(order => (
-                <div
-                  key={order.id}
-                  onClick={() => handleMarkCompleted(order.id, order.ticketNumber)}
-                  className="group relative p-4 rounded-xl bg-surface border border-border hover:border-text/40 transition-all cursor-pointer flex flex-col justify-between text-center"
-                  title="Click để xóa phiếu (Khách đã nhận)"
-                >
-                  <span className="text-xs text-text-dim block font-medium">Phiếu số</span>
-                  <div className="text-3xl font-bold text-text my-1 font-mono tracking-tight">
-                    #{order.ticketNumber}
-                  </div>
-                  <div className="text-[11px] text-text-dim pt-2 border-t border-border flex justify-between">
-                    <span>{order.itemCount} món</span>
-                    <span className="text-text-muted">{order.total.toLocaleString('vi-VN')}đ</span>
-                  </div>
+              {readyOrders.map(order => {
+                const itemCount = order.items.reduce((sum, it) => sum + it.quantity, 0);
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => handleMarkCompleted(order.id, order.ticketNumber)}
+                    className="group relative p-4 rounded-xl bg-surface border border-emerald-500/30 hover:border-emerald-500 transition-all cursor-pointer flex flex-col justify-between text-center"
+                    title="Click để xóa phiếu (Khách đã nhận)"
+                  >
+                    <span className="text-xs text-text-dim block font-medium">Phiếu số</span>
+                    <div className="text-3xl font-bold text-emerald-500 my-1 font-mono tracking-tight">
+                      #{order.ticketNumber}
+                    </div>
+                    <div className="text-[11px] text-text-dim pt-2 border-t border-border flex justify-between">
+                      <span>{itemCount} món</span>
+                      <span className="text-text-muted">{order.total.toLocaleString('vi-VN')} đ</span>
+                    </div>
 
-                  <div className="mt-2 text-[10px] text-text font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                    Chạm: Đã Nhận Xong ✓
+                    <div className="mt-2 text-[10px] text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      Chạm: Đã Nhận Xong ✓
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -197,7 +245,7 @@ export default function GroceryDisplayPage() {
       {/* Staff Bottom Controller Toolbar */}
       <footer className="px-6 py-3 bg-surface border-t border-border flex flex-wrap items-center justify-between text-xs text-text-muted gap-3">
         <div className="flex items-center gap-3">
-          <span>Click trực tiếp vào từng ô số phiếu để cập nhật trạng thái nhanh.</span>
+          <span>Click trực tiếp vào từng ô số phiếu để cập nhật trạng thái nhanh. Dữ liệu tự động cập nhật từ quầy POS.</span>
         </div>
 
         <div className="flex items-center gap-3">

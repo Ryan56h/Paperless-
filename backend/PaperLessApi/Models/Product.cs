@@ -25,6 +25,19 @@ public class Product
 
     public long Price { get; set; }
 
+    [MaxLength(30)]
+    public string Unit { get; set; } = "Cái";
+
+    [MaxLength(50)]
+    public string? Barcode { get; set; }
+
+    public int Stock { get; set; } = 100;
+
+    public bool Popular { get; set; } = false;
+
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
+
     public bool IsAvailable { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

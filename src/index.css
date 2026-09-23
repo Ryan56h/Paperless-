@@ -64,6 +64,12 @@
     animation: none !important;
   }
 
+  /* Hide native browser password reveal and clear icons (Edge, IE, Chrome) */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

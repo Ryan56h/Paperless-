@@ -26,6 +26,7 @@ import ManagerDashboard from './pages/ManagerDashboard';
 import LoyaltyVoucher from './pages/LoyaltyVoucher';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import PublicOnlyRoute from './components/common/PublicOnlyRoute';
 
 function AppRedirect() {
   const { business, user } = useAuth();
@@ -41,9 +42,30 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route
+              path="/register"
+              element={
+                <PublicOnlyRoute>
+                  <Register />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <PublicOnlyRoute>
+                  <Login />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicOnlyRoute>
+                  <ForgotPassword />
+                </PublicOnlyRoute>
+              }
+            />
             <Route path="/lookup" element={<InvoiceLookup />} />
             <Route path="/invoice/:id" element={<CustomerInvoice />} />
 
