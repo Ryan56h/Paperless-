@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { forgotPasswordApi, verifyResetCodeApi, resetPasswordApi } from '../../services/authApi';
+import { validateEmail, validateOtp, validatePassword } from '../../utils/validators';
 
 type Step = 'REQUEST' | 'VERIFY' | 'RESET' | 'SUCCESS';
 
@@ -9,36 +10,51 @@ export default function ForgotPassword() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>('REQUEST');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [devCode, setDevCode] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Countdown timer for resend
+  const startCountdown = () => {
+    setCountdown(60);
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // Step 1: Request Reset Code
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRequestCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (countdown > 0 && step === 'VERIFY') return;
+
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const trimmedInput = emailOrPhone.trim();
-    if (!trimmedInput) {
-      setErrorMessage('Vui lòng nhập email hoặc số điện thoại của bạn.');
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setErrorMessage(emailErr);
       return;
     }
 
+    const trimmedInput = email.trim();
     setIsSubmitting(true);
     try {
       const res = await forgotPasswordApi(trimmedInput);
-      if (res.resetCode) {
-        setDevCode(res.resetCode);
-        setCode(res.resetCode); // Pre-fill for convenience
-      }
-      setSuccessMessage('Mã xác nhận gồm 6 chữ số đã được gửi!');
+      setSuccessMessage(res.message || 'Mã xác thực OTP đã được gửi đến email của bạn.');
+      setCode('');
+      startCountdown();
       setStep('VERIFY');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Có lỗi xảy ra, vui lòng thử lại.');
@@ -53,15 +69,15 @@ export default function ForgotPassword() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const trimmedCode = code.trim();
-    if (trimmedCode.length !== 6) {
-      setErrorMessage('Mã xác nhận phải gồm đúng 6 chữ số.');
+    const otpErr = validateOtp(code);
+    if (otpErr) {
+      setErrorMessage(otpErr);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await verifyResetCodeApi(emailOrPhone.trim(), trimmedCode);
+      await verifyResetCodeApi(email.trim(), code.trim());
       setSuccessMessage('Xác thực mã thành công! Hãy nhập mật khẩu mới.');
       setStep('RESET');
     } catch (err: unknown) {
@@ -77,8 +93,9 @@ export default function ForgotPassword() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (newPassword.length < 6) {
-      setErrorMessage('Mật khẩu mới phải có độ dài ít nhất 6 ký tự.');
+    const passErr = validatePassword(newPassword, 'Mật khẩu mới');
+    if (passErr) {
+      setErrorMessage(passErr);
       return;
     }
 
@@ -89,7 +106,7 @@ export default function ForgotPassword() {
 
     setIsSubmitting(true);
     try {
-      await resetPasswordApi(emailOrPhone.trim(), code.trim(), newPassword);
+      await resetPasswordApi(email.trim(), code.trim(), newPassword);
       setStep('SUCCESS');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Không thể đặt lại mật khẩu. Vui lòng thử lại.');
@@ -114,9 +131,9 @@ export default function ForgotPassword() {
   const getSubtitle = () => {
     switch (step) {
       case 'REQUEST':
-        return 'Nhập email hoặc số điện thoại đã đăng ký để nhận mã khôi phục.';
+        return 'Nhập địa chỉ email đã đăng ký để nhận mã xác thực OTP.';
       case 'VERIFY':
-        return `Mã 6 chữ số đã được gửi tới ${emailOrPhone}.`;
+        return `Mã 6 chữ số đã được gửi tới email ${email}.`;
       case 'RESET':
         return 'Vui lòng thiết lập mật khẩu mới an toàn cho tài khoản.';
       case 'SUCCESS':
@@ -149,14 +166,14 @@ export default function ForgotPassword() {
       {step === 'REQUEST' && (
         <form onSubmit={handleRequestCode} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text mb-1">Email hoặc Số điện thoại</label>
+            <label className="block text-xs font-medium text-text mb-1">Địa chỉ Email *</label>
             <input
-              type="text"
+              type="email"
               required
               disabled={isSubmitting}
-              placeholder="cuahang@paperless.vn hoặc 0912345678"
-              value={emailOrPhone}
-              onChange={e => setEmailOrPhone(e.target.value)}
+              placeholder="cuahang@gmail.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="w-full px-3 py-2 rounded bg-surface-2 border border-border text-text text-xs focus:outline-none focus:border-text disabled:opacity-50"
             />
           </div>
@@ -188,14 +205,7 @@ export default function ForgotPassword() {
       {/* STEP 2: Verify Code */}
       {step === 'VERIFY' && (
         <form onSubmit={handleVerifyCode} className="space-y-4">
-          {devCode && (
-            <div className="p-2.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs">
-              <span className="font-semibold">Mã thử nghiệm nhanh (Demo OTP): </span>
-              <span className="font-mono font-bold tracking-widest text-sm bg-surface px-1.5 py-0.5 rounded border border-blue-500/30">
-                {devCode}
-              </span>
-            </div>
-          )}
+          
 
           <div>
             <label className="block text-xs font-medium text-text mb-1">Mã xác nhận (6 chữ số)</label>
@@ -203,11 +213,12 @@ export default function ForgotPassword() {
               type="text"
               maxLength={6}
               required
+              autoFocus
               disabled={isSubmitting}
-              placeholder="123456"
+              placeholder="••••••"
               value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full px-3 py-2.5 text-center tracking-[0.5em] font-mono text-base font-bold rounded bg-surface-2 border border-border text-text focus:outline-none focus:border-text disabled:opacity-50"
+              className="w-full px-3 py-2.5 text-center tracking-[0.5em] font-mono text-lg font-bold rounded bg-surface-2 border border-border text-text focus:outline-none focus:border-text disabled:opacity-50"
             />
           </div>
 
@@ -231,19 +242,21 @@ export default function ForgotPassword() {
               type="button"
               onClick={() => {
                 setErrorMessage(null);
+                setSuccessMessage(null);
+                setCode('');
                 setStep('REQUEST');
               }}
               className="text-text-muted hover:text-text underline"
             >
-              Đổi số / email
+              Đổi email
             </button>
             <button
               type="button"
-              disabled={isSubmitting}
-              onClick={handleRequestCode}
-              className="text-text font-semibold hover:underline"
+              disabled={isSubmitting || countdown > 0}
+              onClick={() => handleRequestCode()}
+              className="text-text font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
             >
-              Gửi lại mã
+              {countdown > 0 ? `Gửi lại mã (${countdown}s)` : 'Gửi lại mã'}
             </button>
           </div>
         </form>
@@ -286,7 +299,7 @@ export default function ForgotPassword() {
             {isSubmitting ? (
               <>
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-bg/30 border-t-bg animate-spin" />
-                <span>Đang lưu mật khẩu mới...</span>
+                <span>Đang cập nhật...</span>
               </>
             ) : (
               'Đổi mật khẩu'
@@ -305,7 +318,7 @@ export default function ForgotPassword() {
           </div>
 
           <p className="text-xs text-text-muted">
-            Mật khẩu mới cho tài khoản <span className="font-semibold text-text">{emailOrPhone}</span> đã được thiết lập thành công.
+            Mật khẩu mới cho tài khoản <span className="font-semibold text-text">{email}</span> đã được thiết lập thành công.
           </p>
 
           <button

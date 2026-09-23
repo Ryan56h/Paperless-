@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { findInvoiceById } from '../../data/mockData';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 function formatCurrency(n: number) {
   return n.toLocaleString('vi-VN') + 'đ';
@@ -69,6 +70,67 @@ export default function CustomerInvoice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<string>('unpaid');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    const input = document.getElementById('invoice-capture');
+    if (!input) return;
+
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#F9FAFB', // matches bg-bg color usually
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      
+      const fileName = `Hoa-don-${data.id || id}.pdf`;
+      const pdfBlob = pdf.output('blob');
+
+      // Thử dùng Web Share API (để có thể Save to Files hoặc gửi Zalo trên Mobile)
+      if (navigator.canShare) {
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Hóa đơn ${data.id || id}`,
+            });
+            return; // Thành công
+          } catch (shareErr) {
+            console.log('Share canceled or failed:', shareErr);
+            // Nếu lỗi/hủy thì fallback về tải xuống thường
+          }
+        }
+      }
+
+      // Fallback: Tải xuống thông thường
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.target = '_blank'; // Giúp Safari/iOS xử lý tốt hơn
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Lỗi tải PDF:', err);
+      alert('Có lỗi xảy ra khi tạo PDF.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) {
@@ -141,8 +203,9 @@ export default function CustomerInvoice() {
   return (
     <div className="min-h-screen bg-bg py-6 px-4">
       <div className="max-w-sm mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
+        <div id="invoice-capture" className="bg-bg pb-2">
+          {/* Header */}
+          <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 mb-2">
             <div className="w-7 h-7 bg-text text-bg rounded flex items-center justify-center">
               <span className="text-xs font-bold">P</span>
@@ -238,20 +301,30 @@ export default function CustomerInvoice() {
             <span className="text-text font-bold text-xl">{formatCurrency(data.total)}</span>
           </div>
         </div>
+        </div>
 
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <button
-            disabled={data.requirePayment && paymentStatus === 'unpaid'}
-            className={`w-full py-2.5 rounded-lg font-medium text-xs cursor-pointer ${data.requirePayment && paymentStatus === 'unpaid'
+            onClick={handleDownloadPdf}
+            disabled={(data.requirePayment && paymentStatus === 'unpaid') || isDownloading}
+            className={`w-full py-2.5 rounded-lg font-medium text-xs cursor-pointer flex items-center justify-center gap-2 ${
+                (data.requirePayment && paymentStatus === 'unpaid') || isDownloading
                 ? 'bg-surface-2 text-text-dim cursor-not-allowed border border-border'
                 : 'bg-text text-bg hover:opacity-90 border border-text'
               }`}
           >
-            {data.requirePayment && paymentStatus === 'unpaid'
-              ? 'Vui lòng thanh toán VietQR để tải PDF'
-              : 'Tải PDF'}
+            {isDownloading ? (
+               <>
+                 <div className="w-3.5 h-3.5 border-2 border-text-dim border-t-transparent rounded-full animate-spin"></div>
+                 Đang tạo PDF...
+               </>
+            ) : data.requirePayment && paymentStatus === 'unpaid' ? (
+              'Vui lòng thanh toán VietQR để tải PDF'
+            ) : (
+              'Tải PDF'
+            )}
           </button>
           <Link to="/lookup">
             <button className="w-full py-2.5 rounded-lg bg-surface border border-border text-text-muted hover:text-text text-xs cursor-pointer font-medium">

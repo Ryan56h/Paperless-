@@ -15,7 +15,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (email: string, password?: string, explicitType?: BusinessType) => Promise<AuthResult>;
-  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }) => Promise<AuthResult>;
+  register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string; otpCode: string }) => Promise<AuthResult>;
   switchBusinessType: (type: BusinessType) => void;
   logout: () => void;
 }
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (
-    data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string }
+    data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string; otpCode: string }
   ): Promise<AuthResult> => {
     try {
       const payload: RegisterPayload = {
@@ -184,6 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: data.password || '123456',
         address: data.address,
         taxCode: data.taxCode,
+        otpCode: data.otpCode,
       };
 
       const res = await registerApi(payload);

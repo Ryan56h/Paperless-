@@ -18,26 +18,107 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _context;
     private readonly ITokenService _tokenService;
     private readonly IPasswordResetService _passwordResetService;
+    private readonly IOtpService _otpService;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(AppDbContext context, ITokenService tokenService, IPasswordResetService passwordResetService)
+    public AuthController(
+        AppDbContext context,
+        ITokenService tokenService,
+        IPasswordResetService passwordResetService,
+        IOtpService otpService,
+        IEmailService emailService,
+        ILogger<AuthController> logger)
     {
         _context = context;
         _tokenService = tokenService;
         _passwordResetService = passwordResetService;
+        _otpService = otpService;
+        _emailService = emailService;
+        _logger = logger;
+    }
+
+    [HttpPost("send-register-otp")]
+    public async Task<IActionResult> SendRegisterOtp([FromBody] SendRegisterOtpRequest request)
+    {
+        var email = request.Email?.Trim().ToLower();
+        if (string.IsNullOrEmpty(email) || !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
+        {
+            return BadRequest(new { message = "Vui lòng cung cấp địa chỉ email hợp lệ (VD: cuahang@gmail.com)." });
+        }
+
+        var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email);
+        if (emailExists)
+        {
+            return BadRequest(new { message = "Email này đã được sử dụng bởi một tài khoản khác." });
+        }
+
+        var code = _otpService.GenerateOtp(email, "register", 10);
+        await _emailService.SendOtpEmailAsync(email, code, "xác thực đăng ký tài khoản mới", request.FullName);
+
+        return Ok(new
+        {
+            message = $"Mã xác thực OTP đã được gửi đến email {email}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác/Spam)."
+        });
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
-        var storeName = request.GetStoreName();
-        var ownerName = request.GetOwnerName();
-        var businessType = !string.IsNullOrWhiteSpace(request.Type) ? request.Type.ToLower() : "grocery";
+        var email = request.Email.Trim().ToLower();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
+        {
+            return BadRequest(new { message = "Địa chỉ email không đúng định dạng." });
+        }
 
-        var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+        var storeName = request.GetStoreName();
+        if (string.IsNullOrWhiteSpace(storeName) || storeName.Length < 2)
+        {
+            return BadRequest(new { message = "Tên cửa hàng phải có ít nhất 2 ký tự." });
+        }
+
+        var ownerName = request.GetOwnerName();
+        if (string.IsNullOrWhiteSpace(ownerName) || ownerName.Length < 2)
+        {
+            return BadRequest(new { message = "Họ và tên chủ quán phải có ít nhất 2 ký tự." });
+        }
+
+        var phone = request.Phone?.Trim() ?? string.Empty;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(0|\+84)(3|5|7|8|9)[0-9]{8}$"))
+        {
+            return BadRequest(new { message = "Số điện thoại không hợp lệ (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09)." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+        {
+            return BadRequest(new { message = "Mật khẩu phải có độ dài từ 6 ký tự trở lên." });
+        }
+
+        var otp = request.OtpCode?.Trim() ?? string.Empty;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(otp, @"^\d{6}$"))
+        {
+            return BadRequest(new { message = "Mã xác thực OTP phải gồm đúng 6 chữ số." });
+        }
+
+        var isOtpValid = _otpService.ConsumeOtp(email, otp, "register");
+        if (!isOtpValid)
+        {
+            return BadRequest(new { message = "Mã xác thực OTP không chính xác hoặc đã hết hạn (hiệu lực 10 phút)." });
+        }
+
+        var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email);
         if (emailExists)
         {
-            return BadRequest(new { message = "Email này đã được sử dụng." });
+            return BadRequest(new { message = "Email này đã được sử dụng bởi tài khoản khác." });
         }
+
+        var phoneExists = await _context.Users.AnyAsync(u => u.Phone == phone);
+        if (phoneExists)
+        {
+            return BadRequest(new { message = "Số điện thoại này đã được sử dụng bởi tài khoản khác." });
+        }
+
+        var businessType = !string.IsNullOrWhiteSpace(request.Type) ? request.Type.ToLower() : "grocery";
 
         var defaultPlan = await _context.Plans.FirstOrDefaultAsync(p => p.Id == "free")
                           ?? await _context.Plans.FirstOrDefaultAsync();
@@ -229,40 +310,43 @@ public class AuthController : ControllerBase
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var input = request.EmailOrPhone?.Trim().ToLower();
-        if (string.IsNullOrEmpty(input))
+        var email = request.GetEmail();
+        if (string.IsNullOrEmpty(email) || !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
         {
-            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+            return BadRequest(new { message = "Vui lòng nhập địa chỉ email hợp lệ (VD: example@gmail.com)." });
         }
 
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == input || u.Phone == input);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
         if (user == null)
         {
-            return NotFound(new { message = "Không tìm thấy tài khoản với email hoặc số điện thoại này." });
+            return NotFound(new { message = "Không tìm thấy tài khoản nào với địa chỉ email này." });
         }
 
-        var code = _passwordResetService.GenerateResetCode(input);
+        var code = _passwordResetService.GenerateResetCode(email);
+
+        // Gửi mã OTP về email của tài khoản
+        await _emailService.SendOtpEmailAsync(user.Email, code, "khôi phục mật khẩu", user.FullName);
 
         return Ok(new
         {
-            message = "Mã xác nhận gồm 6 chữ số đã được gửi tới tài khoản của bạn.",
-            identifier = input,
-            resetCode = code
+            message = $"Mã xác nhận 6 chữ số đã được gửi tới email {MaskEmail(user.Email)}. Vui lòng kiểm tra hộp thư đến.",
+            identifier = email,
+            email = MaskEmail(user.Email)
         });
     }
 
     [HttpPost("verify-reset-code")]
     public IActionResult VerifyResetCode([FromBody] VerifyResetCodeRequest request)
     {
-        var input = request.EmailOrPhone?.Trim().ToLower();
-        if (string.IsNullOrEmpty(input))
+        var email = request.GetEmail();
+        if (string.IsNullOrEmpty(email))
         {
-            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+            return BadRequest(new { message = "Vui lòng cung cấp địa chỉ email." });
         }
 
-        var isValid = _passwordResetService.VerifyResetCode(input, request.Code);
+        var isValid = _passwordResetService.VerifyResetCode(email, request.Code);
         if (!isValid)
         {
             return BadRequest(new { message = "Mã xác nhận không chính xác hoặc đã hết hạn." });
@@ -274,20 +358,20 @@ public class AuthController : ControllerBase
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
-        var input = request.EmailOrPhone?.Trim().ToLower();
-        if (string.IsNullOrEmpty(input))
+        var email = request.GetEmail();
+        if (string.IsNullOrEmpty(email))
         {
-            return BadRequest(new { message = "Vui lòng nhập email hoặc số điện thoại." });
+            return BadRequest(new { message = "Vui lòng cung cấp địa chỉ email." });
         }
 
-        var isConsumed = _passwordResetService.ConsumeResetCode(input, request.Code);
+        var isConsumed = _passwordResetService.ConsumeResetCode(email, request.Code);
         if (!isConsumed)
         {
             return BadRequest(new { message = "Mã xác nhận không hợp lệ hoặc đã hết hạn." });
         }
 
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == input || u.Phone == input);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
         if (user == null)
         {
@@ -298,5 +382,22 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới." });
+    }
+
+    private static string MaskEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return email;
+        var atIndex = email.IndexOf('@');
+        if (atIndex <= 1) return email;
+
+        var name = email[..atIndex];
+        var domain = email[atIndex..];
+
+        if (name.Length <= 3)
+        {
+            return $"{name[0]}***{domain}";
+        }
+
+        return $"{name[0]}***{name[^1]}{domain}";
     }
 }

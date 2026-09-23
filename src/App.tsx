@@ -11,6 +11,7 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import GroceryOrderPage from './pages/Grocery/OrderPage';
 import GroceryDisplayPage from './pages/Grocery/DisplayPage';
 import GroceryRevenuePage from './pages/Grocery/RevenuePage';
+import GroceryProductsPage from './pages/Grocery/ProductsPage';
 
 import CafeOrderPage from './pages/Cafe/OrderPage';
 import CafeDisplayPage from './pages/Cafe/DisplayPage';
@@ -81,6 +82,14 @@ export default function App() {
               element={
                 <ProtectedRoute requiredBusinessType="grocery">
                   <GroceryRevenuePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/grocery/products"
+              element={
+                <ProtectedRoute requiredBusinessType="grocery">
+                  <GroceryProductsPage />
                 </ProtectedRoute>
               }
             />

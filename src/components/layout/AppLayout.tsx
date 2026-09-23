@@ -48,6 +48,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const groceryLinks = [
     { to: '/app/grocery/order', label: 'Bán hàng (POS)' },
     { to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' },
+    { to: '/app/grocery/products', label: 'Quản lý sản phẩm' },
   ];
 
   const cafeLinks = [
@@ -59,9 +60,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const activeLinks = currentType === 'cafe' ? cafeLinks : groceryLinks;
 
   return (
-    <div className="flex h-screen w-full bg-bg text-text overflow-hidden font-sans">
-      {/* Sidebar */}
-      <aside className="w-60 shrink-0 flex flex-col bg-surface border-r border-border h-screen">
+    <div className="flex flex-col md:flex-row h-screen w-full bg-bg text-text overflow-hidden font-sans">
+      {/* Sidebar (Desktop) */}
+      <aside className="hidden md:flex w-60 shrink-0 flex-col bg-surface border-r border-border h-screen">
         {/* Header / Brand */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
@@ -135,9 +136,34 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-bg">
+      <main className="flex-1 flex flex-col h-full overflow-y-auto bg-bg pb-16 md:pb-0">
         {children}
       </main>
+
+      {/* Bottom Nav (Mobile) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border flex justify-around items-center h-16 z-50 px-2 pb-safe shadow-lg">
+        {activeLinks.map(link => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 h-full text-[10px] sm:text-xs font-medium transition-colors text-center ${
+                isActive
+                  ? 'text-text font-bold bg-surface-2'
+                  : 'text-text-muted hover:text-text'
+              }`
+            }
+          >
+            <span className="px-1">{link.label}</span>
+          </NavLink>
+        ))}
+        <button 
+          onClick={toggleTheme}
+          className="flex flex-col items-center justify-center flex-1 h-full text-[10px] sm:text-xs font-medium text-text-muted transition-colors text-center"
+        >
+           <span className="px-1">Đổi Theme</span>
+        </button>
+      </nav>
     </div>
   );
 }
