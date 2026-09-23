@@ -50,13 +50,23 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public virtual void Update(T entity)
     {
         _dbSet.Update(entity);
-        _context.SaveChanges();
+    }
+
+    public virtual async Task UpdateAsync(T entity)
+    {
+        _dbSet.Update(entity);
+        await _context.SaveChangesAsync();
     }
 
     public virtual void Delete(T entity)
     {
         _dbSet.Remove(entity);
-        _context.SaveChanges();
+    }
+
+    public virtual async Task DeleteAsync(T entity)
+    {
+        _dbSet.Remove(entity);
+        await _context.SaveChangesAsync();
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)

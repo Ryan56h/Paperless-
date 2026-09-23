@@ -4,8 +4,9 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using PaperLessApi.DTOs;
 using PaperLessApi.Models;
-using PaperLessApi.Repositories;
+using PaperLessApi.Services;
 
 namespace PaperLessApi.Controllers;
 
@@ -14,12 +15,12 @@ namespace PaperLessApi.Controllers;
 public class ProductController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IProductRepository _productRepository;
+    private readonly IProductService _productService;
 
-    public ProductController(IHttpClientFactory httpClientFactory, IProductRepository productRepository)
+    public ProductController(IHttpClientFactory httpClientFactory, IProductService productService)
     {
         _httpClientFactory = httpClientFactory;
-        _productRepository = productRepository;
+        _productService = productService;
     }
 
     [HttpGet]
@@ -30,8 +31,8 @@ public class ProductController : ControllerBase
             return BadRequest(new { message = "tenantId is required" });
         }
 
-        var products = await _productRepository.FindAsync(p => p.TenantId == tenantId && p.IsAvailable);
-        return Ok(products.OrderByDescending(p => p.CreatedAt).ToList());
+        var products = await _productService.GetProductsAsync(tenantId, null, null);
+        return Ok(products);
     }
 
     [HttpPost]
@@ -42,42 +43,56 @@ public class ProductController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        await _productRepository.AddAsync(product);
+        var created = await _productService.CreateProductAsync(product.TenantId, new CreateProductRequest
+        {
+            Name = product.Name,
+            Category = product.Category,
+            Price = product.Price,
+            Unit = product.Unit,
+            Barcode = product.Barcode,
+            Stock = product.Stock,
+            Popular = product.Popular,
+            ImageUrl = product.ImageUrl
+        });
 
-        return CreatedAtAction(nameof(GetProducts), new { tenantId = product.TenantId }, product);
+        return CreatedAtAction(nameof(GetProducts), new { tenantId = product.TenantId }, created);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] Product updatedProduct)
     {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
+        var tenantId = !string.IsNullOrEmpty(updatedProduct.TenantId) ? updatedProduct.TenantId : "BIZ-GROCERY-01";
+
+        var updated = await _productService.UpdateProductAsync(tenantId, id, new UpdateProductRequest
+        {
+            Name = updatedProduct.Name,
+            Category = updatedProduct.Category,
+            Price = updatedProduct.Price,
+            Unit = updatedProduct.Unit,
+            Barcode = updatedProduct.Barcode,
+            Stock = updatedProduct.Stock,
+            Popular = updatedProduct.Popular,
+            ImageUrl = updatedProduct.ImageUrl,
+            IsAvailable = updatedProduct.IsAvailable
+        });
+
+        if (updated == null)
         {
             return NotFound(new { message = "Product not found" });
         }
 
-        product.Name = updatedProduct.Name;
-        product.Category = updatedProduct.Category;
-        product.Price = updatedProduct.Price;
-        product.Unit = updatedProduct.Unit;
-        product.Barcode = updatedProduct.Barcode;
-        product.Popular = updatedProduct.Popular;
-        
-        await _productRepository.SaveChangesAsync();
-        return Ok(product);
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(string id)
+    public async Task<IActionResult> DeleteProduct(string id, [FromQuery] string? tenantId)
     {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
+        var tid = !string.IsNullOrEmpty(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        var success = await _productService.DeleteProductAsync(tid, id);
+        if (!success)
         {
             return NotFound(new { message = "Product not found" });
         }
-
-        product.IsAvailable = false; // Soft delete
-        await _productRepository.SaveChangesAsync();
 
         return Ok(new { message = "Product deleted successfully" });
     }
