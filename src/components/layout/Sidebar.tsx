@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const staffLinks = [
   { to: '/staff', label: 'Tổng quan', end: true },
@@ -18,7 +18,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ role }: SidebarProps) {
-  const navigate = useNavigate();
   const links = role === 'staff' ? staffLinks : managerLinks;
   
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -35,10 +34,6 @@ export default function Sidebar({ role }: SidebarProps) {
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
-  };
-
-  const switchRole = () => {
-    navigate(role === 'staff' ? '/manager' : '/staff');
   };
 
   return (

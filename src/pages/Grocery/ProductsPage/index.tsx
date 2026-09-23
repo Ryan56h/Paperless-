@@ -249,7 +249,13 @@ export default function GroceryProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredProducts.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                    Đang tải danh sách sản phẩm...
+                  </td>
+                </tr>
+              ) : filteredProducts.length > 0 ? (
                 filteredProducts.map(p => (
                   <tr key={p.id} className="hover:bg-surface-2 transition-colors">
                     <td className="px-4 py-3">
