@@ -4,9 +4,8 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PaperLessApi.Data;
 using PaperLessApi.Models;
+using PaperLessApi.Repositories;
 
 namespace PaperLessApi.Controllers;
 
@@ -15,12 +14,12 @@ namespace PaperLessApi.Controllers;
 public class ProductController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly AppDbContext _context;
+    private readonly IProductRepository _productRepository;
 
-    public ProductController(IHttpClientFactory httpClientFactory, AppDbContext context)
+    public ProductController(IHttpClientFactory httpClientFactory, IProductRepository productRepository)
     {
         _httpClientFactory = httpClientFactory;
-        _context = context;
+        _productRepository = productRepository;
     }
 
     [HttpGet]
@@ -31,12 +30,8 @@ public class ProductController : ControllerBase
             return BadRequest(new { message = "tenantId is required" });
         }
 
-        var products = await _context.Products
-            .Where(p => p.TenantId == tenantId && p.IsAvailable)
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
-
-        return Ok(products);
+        var products = await _productRepository.FindAsync(p => p.TenantId == tenantId && p.IsAvailable);
+        return Ok(products.OrderByDescending(p => p.CreatedAt).ToList());
     }
 
     [HttpPost]
@@ -47,8 +42,7 @@ public class ProductController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
+        await _productRepository.AddAsync(product);
 
         return CreatedAtAction(nameof(GetProducts), new { tenantId = product.TenantId }, product);
     }
@@ -56,7 +50,7 @@ public class ProductController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] Product updatedProduct)
     {
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _productRepository.GetByIdAsync(id);
         if (product == null)
         {
             return NotFound(new { message = "Product not found" });
@@ -69,21 +63,21 @@ public class ProductController : ControllerBase
         product.Barcode = updatedProduct.Barcode;
         product.Popular = updatedProduct.Popular;
         
-        await _context.SaveChangesAsync();
+        await _productRepository.SaveChangesAsync();
         return Ok(product);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduct(string id)
     {
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _productRepository.GetByIdAsync(id);
         if (product == null)
         {
             return NotFound(new { message = "Product not found" });
         }
 
         product.IsAvailable = false; // Soft delete
-        await _context.SaveChangesAsync();
+        await _productRepository.SaveChangesAsync();
 
         return Ok(new { message = "Product deleted successfully" });
     }

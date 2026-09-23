@@ -18,21 +18,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
-builder.Services.AddScoped<
-    PaperLessApi.Repositories.IInvoiceRepository,
-    PaperLessApi.Repositories.InvoiceRepository>();
+// Repositories
+builder.Services.AddScoped(typeof(PaperLessApi.Repositories.IGenericRepository<>), typeof(PaperLessApi.Repositories.GenericRepository<>));
+builder.Services.AddScoped<PaperLessApi.Repositories.IInvoiceRepository, PaperLessApi.Repositories.InvoiceRepository>();
+builder.Services.AddScoped<PaperLessApi.Repositories.IProductRepository, PaperLessApi.Repositories.ProductRepository>();
+builder.Services.AddScoped<PaperLessApi.Repositories.ICustomerRepository, PaperLessApi.Repositories.CustomerRepository>();
 
-builder.Services.AddScoped<
-    PaperLessApi.Services.IInvoiceService,
-    PaperLessApi.Services.InvoiceService>();
+// Services
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IRevenueService, RevenueService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IOtpService, OtpService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<IRevenueService, RevenueService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(options =>

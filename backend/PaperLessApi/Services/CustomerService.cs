@@ -1,28 +1,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using PaperLessApi.Data;
 using PaperLessApi.DTOs;
 using PaperLessApi.Models;
+using PaperLessApi.Repositories;
 
 namespace PaperLessApi.Services;
 
 public class CustomerService : ICustomerService
 {
-    private readonly AppDbContext _context;
+    private readonly ICustomerRepository _customerRepository;
 
-    public CustomerService(AppDbContext context)
+    public CustomerService(ICustomerRepository customerRepository)
     {
-        _context = context;
+        _customerRepository = customerRepository;
     }
 
     public async Task<CustomerDto?> LookupByPhoneAsync(string tenantId, string phone)
     {
         var cleanPhone = phone.Trim();
-        var customer = await _context.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Phone == cleanPhone);
+        var customer = await _customerRepository.GetByPhoneAsync(tenantId, cleanPhone);
 
         if (customer == null) return null;
 
@@ -40,31 +37,23 @@ public class CustomerService : ICustomerService
 
     public async Task<List<CustomerDto>> GetCustomersAsync(string tenantId, int limit)
     {
-        var customers = await _context.Customers
-            .AsNoTracking()
-            .Where(c => c.TenantId == tenantId)
-            .OrderByDescending(c => c.TotalSpent)
-            .Take(limit)
-            .Select(c => new CustomerDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Phone = c.Phone,
-                Points = c.Points,
-                Tier = c.Tier,
-                TotalSpent = c.TotalSpent,
-                TotalOrders = c.TotalOrders
-            })
-            .ToListAsync();
+        var customers = await _customerRepository.GetCustomersAsync(tenantId, limit);
 
-        return customers;
+        return customers.Select(c => new CustomerDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Phone = c.Phone,
+            Points = c.Points,
+            Tier = c.Tier,
+            TotalSpent = c.TotalSpent,
+            TotalOrders = c.TotalOrders
+        }).ToList();
     }
 
     public async Task<CustomerDto?> GetCustomerByIdAsync(string tenantId, string id)
     {
-        var customer = await _context.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Id == id);
+        var customer = await _customerRepository.GetByIdAsync(tenantId, id);
 
         if (customer == null) return null;
 
@@ -83,7 +72,7 @@ public class CustomerService : ICustomerService
     public async Task<CustomerDto?> CreateCustomerAsync(string tenantId, CreateCustomerRequest request)
     {
         var phone = request.Phone.Trim();
-        var exists = await _context.Customers.AnyAsync(c => c.TenantId == tenantId && c.Phone == phone);
+        var exists = await _customerRepository.ExistsAsync(c => c.TenantId == tenantId && c.Phone == phone);
         if (exists) return null;
 
         var customer = new Customer
@@ -97,8 +86,7 @@ public class CustomerService : ICustomerService
             TotalOrders = 0
         };
 
-        _context.Customers.Add(customer);
-        await _context.SaveChangesAsync();
+        await _customerRepository.AddAsync(customer);
 
         return new CustomerDto
         {

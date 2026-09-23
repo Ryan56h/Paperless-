@@ -2,19 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using PaperLessApi.Data;
 using PaperLessApi.DTOs;
+using PaperLessApi.Repositories;
 
 namespace PaperLessApi.Services;
 
 public class RevenueService : IRevenueService
 {
-    private readonly AppDbContext _context;
+    private readonly IInvoiceRepository _invoiceRepository;
 
-    public RevenueService(AppDbContext context)
+    public RevenueService(IInvoiceRepository invoiceRepository)
     {
-        _context = context;
+        _invoiceRepository = invoiceRepository;
     }
 
     public async Task<TodayRevenueDto> GetGroceryTodayRevenueAsync(string tenantId)
@@ -23,18 +22,11 @@ public class RevenueService : IRevenueService
         var tomorrow = today.AddDays(1);
         var yesterday = today.AddDays(-1);
 
-        // Hóa đơn hôm nay
-        var todayInvoices = await _context.Invoices
-            .AsNoTracking()
-            .Include(i => i.Items)
-            .Where(i => i.TenantId == tenantId && i.CreatedAt >= today && i.CreatedAt < tomorrow)
-            .ToListAsync();
+        // Hóa đơn hôm nay qua InvoiceRepository
+        var todayInvoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, today, tomorrow);
 
-        // Doanh thu hôm qua
-        var yesterdayRevenue = await _context.Invoices
-            .AsNoTracking()
-            .Where(i => i.TenantId == tenantId && i.CreatedAt >= yesterday && i.CreatedAt < today)
-            .SumAsync(i => (long?)i.Total) ?? 0;
+        // Doanh thu hôm qua qua InvoiceRepository
+        var yesterdayRevenue = await _invoiceRepository.GetRevenueInDateRangeAsync(tenantId, yesterday, today);
 
         var totalRevenue = todayInvoices.Sum(i => i.Total);
         var orderCount = todayInvoices.Count;
