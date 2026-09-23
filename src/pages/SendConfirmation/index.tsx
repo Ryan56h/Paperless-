@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import PageLayout from '../../components/layout/PageLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
@@ -46,48 +46,90 @@ export default function SendConfirmation() {
   });
   const [activeSuccessTab, setActiveSuccessTab] = useState<'zalo' | 'sms'>('zalo');
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (draft) {
       const channelLabel = draft.channel === 'zalo' ? 'Zalo' : draft.channel === 'sms' ? 'SMS' : 'Zalo + SMS';
-      setSuccessInfo({
-        phone: draft.phone,
-        customerName: draft.customerName,
-        channelLabel,
-        channel: draft.channel,
-        items: draft.items,
-        total: draft.total,
-        requirePayment: draft.requirePayment ?? true,
-      });
-      setActiveSuccessTab(draft.channel === 'sms' ? 'sms' : 'zalo');
+      
+      const savedBusiness = localStorage.getItem('paperless_business');
+      const business = savedBusiness ? JSON.parse(savedBusiness) : null;
+      const tenantId = business?.id || 'BIZ-DEFAULT-01';
 
-      // Save custom invoice payload to localStorage so CustomerInvoice can display it dynamically
-      const createdInvoice = {
+      const payload = {
         id: invoiceId,
+        tenantId: tenantId,
         customerName: draft.customerName,
         customerPhone: draft.phone,
-        branch: 'FreshMart Chi nhánh Q1',
+        branchName: 'FreshMart Chi nhánh Q1',
         staffName: 'Nguyễn Bảo Trân',
-        items: draft.items,
+        items: draft.items.map(item => ({
+          invoiceId: invoiceId,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        })),
         subtotal: draft.subtotal,
         discount: draft.discount,
         tax: draft.tax,
         total: draft.total,
-        requirePayment: draft.requirePayment ?? true,
-        paymentStatus: (draft.requirePayment ?? true) ? 'unpaid' : 'paid',
-        createdAt: new Date().toISOString(),
+        payStatus: (draft.requirePayment ?? true) ? "unpaid" : "paid",
         sendChannel: draft.channel,
-        sendStatus: 'sent',
+        sendStatus: "sent"
       };
-      localStorage.setItem(`invoice-${invoiceId}`, JSON.stringify(createdInvoice));
+
+      try {
+        // Gửi POST request để lưu hóa đơn vào database thật
+        const response = await fetch('/api/bill', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const rawText = await response.text();
+          let errData;
+          try {
+            errData = JSON.parse(rawText);
+          } catch (e) {
+            // It's probably an HTML error page from ASP.NET Core (500 Internal Server Error)
+            console.error("LỖI RAW TỪ BACKEND:", rawText.substring(0, 1000));
+            throw new Error(`Lỗi server (500). Xem Console F12 để biết chi tiết.\nNội dung: ${rawText.substring(0, 100)}...`);
+          }
+          
+          if (errData && errData.errors) {
+            const errorMessages = Object.entries(errData.errors)
+              .map(([field, msgs]: any) => `${field}: ${msgs.join(', ')}`)
+              .join('\n');
+            throw new Error(`Lỗi dữ liệu (400):\n${errorMessages}`);
+          }
+          throw new Error((errData && errData.message) || 'Lỗi khi lưu vào database');
+        }
+
+        setSuccessInfo({
+          phone: draft.phone,
+          customerName: draft.customerName,
+          channelLabel,
+          channel: draft.channel,
+          items: draft.items,
+          total: draft.total,
+          requirePayment: draft.requirePayment ?? true,
+        });
+        setActiveSuccessTab(draft.channel === 'sms' ? 'sms' : 'zalo');
+
+        sessionStorage.removeItem('invoiceDraft');
+        sessionStorage.removeItem('posOrderDraft');
+      } catch (error) {
+        console.error('Lỗi lưu DB:', error);
+        alert('Không thể lưu vào database! Hãy chắc chắn backend localhost:8080 đang chạy.');
+      }
     }
-    sessionStorage.removeItem('invoiceDraft');
-    sessionStorage.removeItem('posOrderDraft');
   };
 
   if (successInfo) {
     return (
-      <PageLayout role="staff">
-        <div className="px-8 py-6 flex flex-col md:flex-row items-center justify-center gap-8 min-h-[80vh] max-w-4xl mx-auto">
+      <AppLayout>
+        <div className="px-8 py-6 flex flex-col md:flex-row items-center justify-center gap-8 min-h-[80vh] w-full max-w-4xl mx-auto">
           <div className="text-center max-w-sm flex-1">
             <div className="w-12 h-12 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4 text-text font-bold text-base">
               ✓
@@ -104,11 +146,8 @@ export default function SendConfirmation() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Link to="/staff/invoice/new">
-                <Button className="w-full">+ Tạo hóa đơn mới</Button>
-              </Link>
-              <Link to="/staff">
-                <Button variant="ghost" className="w-full">Về trang bán hàng (POS)</Button>
+              <Link to="/app/grocery/order">
+                <Button className="w-full">+ Tạo đơn hàng mới (POS)</Button>
               </Link>
             </div>
           </div>
@@ -162,17 +201,17 @@ export default function SendConfirmation() {
             )}
           </div>
         </div>
-      </PageLayout>
+      </AppLayout>
     );
   }
 
   if (!draft) {
     return (
-      <PageLayout role="staff">
-        <div className="px-8 py-6">
-          <p className="text-text-muted">Không có dữ liệu hóa đơn. <Link to="/staff/invoice/new" className="text-text underline">Tạo mới</Link></p>
+      <AppLayout>
+        <div className="px-8 py-6 w-full">
+          <p className="text-text-muted">Không có dữ liệu hóa đơn. <Link to="/app/grocery/order" className="text-text underline">Quay lại POS</Link></p>
         </div>
-      </PageLayout>
+      </AppLayout>
     );
   }
 
@@ -180,8 +219,8 @@ export default function SendConfirmation() {
   const channelBadgeVariant = draft.channel === 'zalo' ? 'zalo' : draft.channel === 'sms' ? 'sms' : 'green';
 
   return (
-    <PageLayout role="staff">
-      <div className="px-8 py-6 max-w-5xl mx-auto">
+    <AppLayout>
+      <div className="px-8 py-6 max-w-5xl mx-auto w-full">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-text">Xác nhận gửi hóa đơn</h1>
           <p className="text-text-dim text-sm mt-0.5">Kiểm tra lại trước khi gửi</p>
@@ -348,6 +387,6 @@ export default function SendConfirmation() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </AppLayout>
   );
 }

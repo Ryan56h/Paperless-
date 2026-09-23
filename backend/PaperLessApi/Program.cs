@@ -9,10 +9,22 @@ using PaperLessApi.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
 
+builder.Services.AddScoped<
+    PaperLessApi.Repositories.IInvoiceRepository,
+    PaperLessApi.Repositories.InvoiceRepository>();
+
+builder.Services.AddScoped<
+    PaperLessApi.Services.IInvoiceService,
+    PaperLessApi.Services.InvoiceService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IOtpService, OtpService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();

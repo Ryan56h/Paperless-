@@ -1,6 +1,6 @@
 import type { BusinessProfile, BusinessType } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5195/api';
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 export interface UserResponse {
   id: string;
@@ -57,7 +57,14 @@ export async function loginApi(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Đăng nhập thất bại (${response.status})`);
+    let errorMessage = errorData.message;
+    if (!errorMessage && errorData.errors) {
+      const firstKey = Object.keys(errorData.errors)[0];
+      if (firstKey && errorData.errors[firstKey].length > 0) {
+        errorMessage = errorData.errors[firstKey][0];
+      }
+    }
+    throw new Error(errorMessage || `Đăng nhập thất bại (${response.status})`);
   }
 
   return response.json();
@@ -116,7 +123,14 @@ export async function registerApi(payload: RegisterPayload): Promise<AuthRespons
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Đăng ký thất bại (${response.status})`);
+    let errorMessage = errorData.message;
+    if (!errorMessage && errorData.errors) {
+      const firstKey = Object.keys(errorData.errors)[0];
+      if (firstKey && errorData.errors[firstKey].length > 0) {
+        errorMessage = errorData.errors[firstKey][0];
+      }
+    }
+    throw new Error(errorMessage || `Đăng ký thất bại (${response.status})`);
   }
 
   return response.json();

@@ -140,7 +140,7 @@ public class AuthController : ControllerBase
         var branch = new Branch
         {
             TenantId = tenant.Id,
-            Name = "Trụ sở chính",
+            Name = "Chi nhánh " + storeName,
             Address = !string.IsNullOrWhiteSpace(request.Address) ? request.Address : "Chưa cập nhật"
         };
         _context.Branches.Add(branch);

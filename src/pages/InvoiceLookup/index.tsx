@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { lookupInvoicesApi, type BackendInvoice } from '../../services/groceryApi';
+
 import Badge from '../../components/common/Badge';
 
 function formatCurrency(n: number) {
@@ -14,6 +15,7 @@ function sendBadge(status: string) {
 }
 
 export default function InvoiceLookup() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<BackendInvoice[]>([]);
   const [searched, setSearched] = useState(false);
@@ -52,9 +54,15 @@ export default function InvoiceLookup() {
           <span className="font-bold text-text text-sm tracking-tight">PaperLess+</span>
         </div>
         <div className="flex gap-4 text-xs font-medium">
-          <Link to="/app/grocery/order" className="text-text-muted hover:text-text">Tạp hoá POS</Link>
-          <Link to="/app/grocery/display" className="text-text-muted hover:text-text">Màn hình gọi số</Link>
-          <Link to="/app/grocery/revenue" className="text-text-muted hover:text-text">Báo cáo doanh thu</Link>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="text-text-muted hover:text-text cursor-pointer px-3 py-1.5 border border-border rounded bg-surface-2"
+          >
+            ← Quay lại
+          </button>
+          <Link to="/app/grocery/order" className="text-text-muted hover:text-text py-1.5">Tạp hoá POS</Link>
+          <Link to="/app/grocery/display" className="text-text-muted hover:text-text py-1.5">Màn hình gọi số</Link>
+          <Link to="/app/grocery/revenue" className="text-text-muted hover:text-text py-1.5">Báo cáo doanh thu</Link>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import GroceryOrderPage from './pages/Grocery/OrderPage';
 import GroceryDisplayPage from './pages/Grocery/DisplayPage';
 import GroceryRevenuePage from './pages/Grocery/RevenuePage';
+import GroceryProductsPage from './pages/Grocery/ProductsPage';
 
 import CafeOrderPage from './pages/Cafe/OrderPage';
 import CafeDisplayPage from './pages/Cafe/DisplayPage';
@@ -33,6 +34,7 @@ function AppRedirect() {
   const type = business?.type || user?.businessType || 'grocery';
   return <Navigate to={type === 'cafe' ? '/app/cafe/order' : '/app/grocery/order'} replace />;
 }
+import NfcReceiver from './pages/NfcReceiver';
 
 export default function App() {
   return (
@@ -68,6 +70,7 @@ export default function App() {
             />
             <Route path="/lookup" element={<InvoiceLookup />} />
             <Route path="/invoice/:id" element={<CustomerInvoice />} />
+        <Route path="/nhan-hoa-don" element={<NfcReceiver />} />
 
             {/* Authenticated POS Routes */}
             <Route
@@ -101,6 +104,14 @@ export default function App() {
               element={
                 <ProtectedRoute requiredBusinessType="grocery">
                   <GroceryRevenuePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/grocery/products"
+              element={
+                <ProtectedRoute requiredBusinessType="grocery">
+                  <GroceryProductsPage />
                 </ProtectedRoute>
               }
             />

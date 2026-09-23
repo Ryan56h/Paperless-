@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageLayout from '../../components/layout/PageLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -68,8 +68,8 @@ export default function CreateInvoice() {
   const canSubmit = phone.length >= 9 && customerName && items.some(i => i.name && i.unitPrice > 0);
 
   return (
-    <PageLayout role="staff">
-      <div className="px-8 py-6 max-w-3xl mx-auto">
+    <AppLayout>
+      <div className="px-8 py-6 max-w-3xl mx-auto w-full">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-text">Tạo hóa đơn mới</h1>
           <p className="text-text-dim text-sm mt-0.5">Nhập thông tin khách hàng và sản phẩm</p>
@@ -233,10 +233,10 @@ export default function CreateInvoice() {
         </Card>
 
         <div className="flex gap-3">
-          <Button variant="ghost" onClick={() => navigate('/staff')}>Hủy</Button>
+          <Button variant="ghost" onClick={() => navigate('/app/grocery/order')}>Hủy</Button>
           <Button disabled={!canSubmit} onClick={handlePreview}>Xem trước & Gửi</Button>
         </div>
       </div>
-    </PageLayout>
+    </AppLayout>
   );
 }

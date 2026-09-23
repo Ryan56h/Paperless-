@@ -112,6 +112,7 @@ public static class DbInitializer
                 new() { Id = "GP020", TenantId = groceryTenant.Id, Name = "Sữa đặc có đường Ông Thọ đỏ 380g", Category = "Sữa & Bơ", Price = 25000, Unit = "Lon", Barcode = "89345601701", Popular = true, Stock = 110 },
                 new() { Id = "GP021", TenantId = groceryTenant.Id, Name = "Sữa tươi TH true MILK ít đường 1L", Category = "Sữa & Bơ", Price = 38000, Unit = "Hộp", Barcode = "89345601702", Popular = true, Stock = 70 },
                 new() { Id = "GP022", TenantId = groceryTenant.Id, Name = "Bơ lạt Anchor 227g", Category = "Sữa & Bơ", Price = 75000, Unit = "Khối", Barcode = "89345601703", Popular = false, Stock = 25 }
+
             };
             context.Products.AddRange(groceryProducts);
 
@@ -177,14 +178,14 @@ public static class DbInitializer
 
             var cafeProducts = new List<Product>
             {
-                new() { Id = "SPC001", TenantId = cafeTenant.Id, Name = "Cà phê sữa đá", Category = "Cà phê", Price = 35000 },
-                new() { Id = "SPC002", TenantId = cafeTenant.Id, Name = "Cà phê đen đá", Category = "Cà phê", Price = 30000 },
-                new() { Id = "SPC003", TenantId = cafeTenant.Id, Name = "Bạc xỉu", Category = "Cà phê", Price = 38000 },
-                new() { Id = "SPC004", TenantId = cafeTenant.Id, Name = "Trà đào cam sả", Category = "Trà trái cây", Price = 45000 },
-                new() { Id = "SPC005", TenantId = cafeTenant.Id, Name = "Trà sen vàng macchiato", Category = "Trà sữa", Price = 48000 },
-                new() { Id = "SPC006", TenantId = cafeTenant.Id, Name = "Matcha latte đá xay", Category = "Đá xay", Price = 55000 },
-                new() { Id = "SPC007", TenantId = cafeTenant.Id, Name = "Bánh sừng bò croissant", Category = "Bánh ngọt", Price = 35000 },
-                new() { Id = "SPC008", TenantId = cafeTenant.Id, Name = "Bánh tiramisu", Category = "Bánh ngọt", Price = 45000 }
+                new() { Id = "SPC001", TenantId = cafeTenant.Id, Name = "Cà phê sữa đá", Category = "Cà phê", Price = 35000, Unit = "Ly", Barcode = "", Popular = true },
+                new() { Id = "SPC002", TenantId = cafeTenant.Id, Name = "Cà phê đen đá", Category = "Cà phê", Price = 30000, Unit = "Ly", Barcode = "", Popular = true },
+                new() { Id = "SPC003", TenantId = cafeTenant.Id, Name = "Bạc xỉu", Category = "Cà phê", Price = 38000, Unit = "Ly", Barcode = "", Popular = true },
+                new() { Id = "SPC004", TenantId = cafeTenant.Id, Name = "Trà đào cam sả", Category = "Trà trái cây", Price = 45000, Unit = "Ly", Barcode = "", Popular = true },
+                new() { Id = "SPC005", TenantId = cafeTenant.Id, Name = "Trà sen vàng macchiato", Category = "Trà sữa", Price = 48000, Unit = "Ly", Barcode = "", Popular = true },
+                new() { Id = "SPC006", TenantId = cafeTenant.Id, Name = "Matcha latte đá xay", Category = "Đá xay", Price = 55000, Unit = "Ly", Barcode = "", Popular = false },
+                new() { Id = "SPC007", TenantId = cafeTenant.Id, Name = "Bánh sừng bò croissant", Category = "Bánh ngọt", Price = 35000, Unit = "Cái", Barcode = "", Popular = true },
+                new() { Id = "SPC008", TenantId = cafeTenant.Id, Name = "Bánh tiramisu", Category = "Bánh ngọt", Price = 45000, Unit = "Phần", Barcode = "", Popular = true }
             };
             context.Products.AddRange(cafeProducts);
 

@@ -26,7 +26,7 @@ public class Product
     public long Price { get; set; }
 
     [MaxLength(30)]
-    public string Unit { get; set; } = "Cái";
+    public string? Unit { get; set; } = "Cái";
 
     [MaxLength(50)]
     public string? Barcode { get; set; }

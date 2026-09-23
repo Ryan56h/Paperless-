@@ -7,16 +7,56 @@ using Microsoft.EntityFrameworkCore;
 using PaperLessApi.Data;
 using PaperLessApi.DTOs;
 using PaperLessApi.Models;
+using PaperLessApi.Repositories;
 
 namespace PaperLessApi.Services;
 
 public class InvoiceService : IInvoiceService
 {
     private readonly AppDbContext _context;
+    private readonly IInvoiceRepository? _repository;
 
-    public InvoiceService(AppDbContext context)
+    public InvoiceService(AppDbContext context, IInvoiceRepository? repository = null)
     {
         _context = context;
+        _repository = repository;
+    }
+
+    public async Task<Invoice?> GetInvoiceAsync(string id)
+    {
+        if (_repository != null) return await _repository.GetInvoiceByIdAsync(id);
+        return await _context.Invoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == id);
+    }
+
+    public async Task<Invoice?> GetLatestInvoiceAsync()
+    {
+        if (_repository != null) return await _repository.GetLatestInvoiceAsync();
+        return await _context.Invoices.Include(i => i.Items).OrderByDescending(i => i.CreatedAt).FirstOrDefaultAsync();
+    }
+
+    public async Task<(bool Success, string Message, Invoice? Invoice)> CreateInvoiceAsync(Invoice invoice)
+    {
+        if (_repository != null)
+        {
+            if (await _repository.ExistsAsync(invoice.Id))
+            {
+                return (false, "Hóa đơn này đã tồn tại!", null);
+            }
+
+            invoice.CreatedAt = DateTime.UtcNow;
+            var createdInvoice = await _repository.AddInvoiceAsync(invoice);
+            return (true, "Tạo hóa đơn thành công", createdInvoice);
+        }
+
+        if (await _context.Invoices.AnyAsync(i => i.Id == invoice.Id))
+        {
+            return (false, "Hóa đơn này đã tồn tại!", null);
+        }
+
+        invoice.CreatedAt = DateTime.UtcNow;
+        _context.Invoices.Add(invoice);
+        await _context.SaveChangesAsync();
+        return (true, "Tạo hóa đơn thành công", invoice);
     }
 
     public async Task<InvoiceDto> CreateInvoiceAsync(

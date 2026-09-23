@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import AppLayout from '../../../components/layout/AppLayout';
 import Button from '../../../components/common/Button';
 import { useAuth } from '../../../context/AuthContext';
@@ -32,6 +33,7 @@ export default function GroceryOrderPage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [showMobileCart, setShowMobileCart] = useState(false);
   const [payMethod, setPayMethod] = useState<'cash' | 'vietqr'>('cash');
   const [createReceipt, setCreateReceipt] = useState(false);
   const [cashGiven, setCashGiven] = useState<number>(0);
@@ -41,10 +43,108 @@ export default function GroceryOrderPage() {
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   const [lastCreatedInvoice, setLastCreatedInvoice] = useState<BackendInvoice | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrModalStatus, setQrModalStatus] = useState<'pending' | 'success'>('pending');
+
+  const lastScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
+
+  // Camera Barcode Scanner
+  useEffect(() => {
+    if (isScanning) {
+      const scanner = new Html5QrcodeScanner(
+        "pos-reader",
+        {
+          fps: 15,
+          qrbox: { width: 250, height: 150 },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
+        },
+        /* verbose= */ false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          const now = Date.now();
+          if (lastScanRef.current.code === decodedText && now - lastScanRef.current.time < 2000) return;
+          lastScanRef.current = { code: decodedText, time: now };
+
+          // Tắt camera ngay lập tức sau khi lấy được mã
+          scanner.clear().catch(e => console.log(e));
+          setIsScanning(false);
+          setScanStatus(null);
+
+          const product = products.find(p => p.barcode === decodedText || p.id === decodedText);
+          if (product) {
+            setCart(prev => {
+              const existing = prev.find(item => item.id === product.id);
+              if (existing) {
+                return prev.map(item =>
+                  item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                );
+              }
+              return [...prev, { ...product, quantity: 1 }];
+            });
+            setShowMobileCart(true);
+          } else {
+            // Tự động tìm trên mạng nếu không có trong DB
+            fetch(`/api/product/lookup-barcode/${decodedText}`)
+              .then(res => {
+                if (!res.ok) throw new Error('Not found');
+                return res.json();
+              })
+              .then(data => {
+                if (data.name) {
+                  const newProduct = {
+                    tenantId: business?.id,
+                    name: data.name,
+                    category: 'Mới thêm',
+                    price: 15000,
+                    unit: 'Cái',
+                    barcode: decodedText,
+                    popular: false,
+                  };
+
+                  return fetch('/api/product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct),
+                  });
+                }
+                throw new Error('No name');
+              })
+              .then(res => res.json())
+              .then(createdProduct => {
+                setProducts(prev => [createdProduct, ...prev]);
+                setCart(prev => [...prev, { ...createdProduct, quantity: 1 }]);
+                setShowMobileCart(true);
+              })
+              .catch(() => {
+                alert(`Không tìm thấy mã vạch ${decodedText} trên hệ thống!`);
+              });
+          }
+        },
+        () => {}
+      );
+
+      return () => {
+        scanner.clear().catch(e => console.log(e));
+      };
+    }
+  }, [isScanning, products, business?.id]);
 
   // Load products and categories from Backend
   useEffect(() => {
@@ -136,6 +236,7 @@ export default function GroceryOrderPage() {
     setCustomerPhone('');
     setCustomerName('');
     setCustomerPoints(null);
+    setShowMobileCart(false);
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
@@ -234,6 +335,12 @@ export default function GroceryOrderPage() {
                 Xóa
               </button>
             )}
+            <button 
+              onClick={() => setIsScanning(true)}
+              className="px-3 py-2 bg-text text-bg rounded font-medium text-xs whitespace-nowrap cursor-pointer shadow-sm"
+            >
+              📷 Quét mã
+            </button>
           </div>
 
           {/* Categories */}
@@ -317,9 +424,50 @@ export default function GroceryOrderPage() {
           )}
         </div>
 
+        {/* Floating Cart Button (Mobile) */}
+        {!showMobileCart && cart.length > 0 && (
+          <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-surface border-t border-border z-30 flex gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] pb-safe">
+            <div className="flex-1 px-3 flex flex-col justify-center">
+              <span className="text-xs text-text-muted">{cart.reduce((s, i) => s + i.quantity, 0)} sản phẩm</span>
+              <span className="font-bold text-text text-base">{total.toLocaleString('vi-VN')} đ</span>
+            </div>
+            <button 
+              onClick={() => setShowMobileCart(true)}
+              className="px-6 py-2 bg-text text-bg rounded-lg font-bold text-sm shadow cursor-pointer"
+            >
+              Xem giỏ
+            </button>
+          </div>
+        )}
+
         {/* RIGHT: CART & CHECKOUT */}
-        <div className="w-full lg:w-84 shrink-0 flex flex-col bg-surface p-5 border-t lg:border-t-0 overflow-y-auto">
-          <div className="flex justify-between items-center mb-3 border-b border-border pb-2.5">
+        <div className={`
+          fixed inset-0 z-50 bg-surface lg:relative lg:w-84 shrink-0 flex flex-col p-5 border-t lg:border-t-0 lg:border-l border-border transition-transform duration-300 overflow-y-auto
+          ${showMobileCart ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}
+        `}>
+          {/* Mobile Close Button */}
+          <div className="lg:hidden flex justify-between items-center mb-3 border-b border-border pb-2.5 mt-2">
+            <div>
+              <h2 className="text-text font-bold text-lg">Giỏ hàng</h2>
+              <p className="text-xs text-text-dim">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => {
+                  setShowMobileCart(false);
+                  setIsScanning(true);
+                }}
+                className="px-2 py-1 bg-surface-2 border border-border rounded text-xs font-medium text-text cursor-pointer"
+              >
+                📷 Quét tiếp
+              </button>
+              <button onClick={() => setShowMobileCart(false)} className="text-2xl text-text-muted hover:text-text cursor-pointer px-1">&times;</button>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex justify-between items-center mb-3 border-b border-border pb-2.5">
             <div>
               <h2 className="text-text font-bold text-sm">Giỏ hàng</h2>
               <p className="text-[11px] text-text-dim">
@@ -511,7 +659,7 @@ export default function GroceryOrderPage() {
 
       {/* Success Modal */}
       {showSuccessModal && lastCreatedInvoice && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
           <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm text-center">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-3">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -564,7 +712,7 @@ export default function GroceryOrderPage() {
 
       {/* VietQR Modal */}
       {showQRModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
           <div className="bg-surface border border-border rounded-xl p-5 w-full max-w-sm text-center flex flex-col items-center">
             <h3 className="text-text font-bold text-sm mb-1">Mã thanh toán VietQR</h3>
             <p className="text-text-dim text-xs mb-3">Quét mã bằng ứng dụng ngân hàng</p>
@@ -606,6 +754,45 @@ export default function GroceryOrderPage() {
                 Xác nhận đã nhận
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scanner Modal */}
+      {isScanning && (
+        <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[70] p-4">
+          <div className="bg-surface p-4 rounded-xl w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-text">Quét mã vạch</h3>
+              <button
+                onClick={() => {
+                  setIsScanning(false);
+                  setScanStatus(null);
+                }}
+                className="text-xl text-text-muted hover:text-text cursor-pointer px-2"
+              >
+                &times;
+              </button>
+            </div>
+            <div id="pos-reader" className="w-full rounded overflow-hidden"></div>
+
+            {scanStatus && (
+              <div
+                className={`mt-3 p-2 rounded text-xs text-center font-medium ${
+                  scanStatus.type === 'success'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : scanStatus.type === 'error'
+                    ? 'bg-red-100 text-red-700 border border-red-200'
+                    : 'bg-blue-100 text-blue-700 border border-blue-200'
+                }`}
+              >
+                {scanStatus.message}
+              </div>
+            )}
+
+            <p className="text-[11px] text-text-dim mt-4 text-center">
+              Hướng camera vào mã vạch trên sản phẩm. Hệ thống sẽ tự động thêm vào giỏ hàng (bạn có thể quét liên tục nhiều món).
+            </p>
           </div>
         </div>
       )}

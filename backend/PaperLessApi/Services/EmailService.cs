@@ -107,9 +107,12 @@ public class EmailService : IEmailService
             {
                 From = new MailAddress(senderEmail, senderName),
                 Subject = subject,
-                Body = htmlBody,
-                IsBodyHtml = true
+                SubjectEncoding = System.Text.Encoding.UTF8
             };
+
+            var alternateView = AlternateView.CreateAlternateViewFromString(htmlBody, System.Text.Encoding.UTF8, "text/html");
+            alternateView.TransferEncoding = System.Net.Mime.TransferEncoding.QuotedPrintable;
+            message.AlternateViews.Add(alternateView);
 
             message.To.Add(toEmail);
             await client.SendMailAsync(message);
