@@ -13,7 +13,9 @@ interface AuthContextType {
   user: UserResponse | null;
   token: string | null;
   isLoggedIn: boolean;
+  isDemo: boolean;
   isLoading: boolean;
+  enterDemoMode: (type?: BusinessType) => void;
   login: (email: string, password?: string, explicitType?: BusinessType) => Promise<AuthResult>;
   register: (data: Omit<BusinessProfile, 'id' | 'createdAt'> & { password?: string; otpCode: string }) => Promise<AuthResult>;
   switchBusinessType: (type: BusinessType) => void;
@@ -62,6 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  const [isDemo, setIsDemo] = useState<boolean>(() => {
+    return localStorage.getItem('paperless_is_demo') === 'true';
+  });
+
   const [business, setBusiness] = useState<BusinessProfile | null>(() => {
     try {
       const saved = localStorage.getItem('paperless_business');
@@ -79,6 +85,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     const verifySession = async () => {
       const storedToken = localStorage.getItem('paperless_token');
+      const storedIsDemo = localStorage.getItem('paperless_is_demo') === 'true';
+
+      // Nếu đang ở chế độ demo và không có token thì giữ nguyên demo
+      if (storedIsDemo && !storedToken) {
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
       if (!storedToken) {
         if (isMounted) setIsLoading(false);
         return;
@@ -89,8 +103,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isMounted) {
           if (data && data.user) {
             setUser(data.user);
+            setIsDemo(false);
+            localStorage.removeItem('paperless_is_demo');
             if (data.business) {
               setBusiness(data.business);
+            } else if (data.user.tenantName) {
+              setBusiness({
+                id: data.user.tenantId || 'tenant-custom',
+                name: data.user.tenantName,
+                type: (data.user.businessType as BusinessType) || 'grocery',
+                ownerName: data.user.fullName,
+                phone: data.user.phone,
+                email: data.user.email,
+                address: '',
+                createdAt: new Date().toISOString()
+              });
             }
             setToken(storedToken);
           } else {
@@ -147,6 +174,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Kích hoạt chế độ dùng thử (Demo) cho khách vãng lai trải nghiệm POS
+  const enterDemoMode = (type: BusinessType = 'grocery') => {
+    setIsDemo(true);
+    localStorage.setItem('paperless_is_demo', 'true');
+    setBusiness(defaultProfiles[type]);
+    // Xóa session thật để không bị lẫn
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('paperless_token');
+    localStorage.removeItem('paperless_user');
+  };
+
   const login = async (
     email: string,
     password?: string,
@@ -156,10 +195,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await loginApi(email, pwd, explicitType);
       if (res && res.token) {
+        // Tắt chế độ demo ngay khi đăng nhập tài khoản thật
+        setIsDemo(false);
+        localStorage.removeItem('paperless_is_demo');
+
         setToken(res.token);
         setUser(res.user);
         if (res.business) {
           setBusiness(res.business);
+        } else if (res.user.tenantName) {
+          setBusiness({
+            id: res.user.tenantId || 'tenant-custom',
+            name: res.user.tenantName,
+            type: (res.user.businessType as BusinessType) || 'grocery',
+            ownerName: res.user.fullName,
+            phone: res.user.phone,
+            email: res.user.email,
+            address: '',
+            createdAt: new Date().toISOString()
+          });
         }
         const resolvedType = (res.business?.type || res.user?.businessType || 'grocery') as BusinessType;
         return { success: true, businessType: resolvedType };
@@ -189,6 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const res = await registerApi(payload);
       if (res && res.token) {
+        // Tắt chế độ demo ngay khi đăng ký tài khoản thật
+        setIsDemo(false);
+        localStorage.removeItem('paperless_is_demo');
+
         setToken(res.token);
         setUser(res.user);
         if (res.business) {
@@ -205,13 +263,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const switchBusinessType = (type: BusinessType) => {
-    setBusiness(defaultProfiles[type]);
+    if (isDemo) {
+      setBusiness(defaultProfiles[type]);
+      return;
+    }
+    // Nếu là tài khoản thật, chỉ đổi loại hình type, tuyệt đối không ghi đè tên cửa hàng thật bằng mock!
+    setBusiness(prev => (prev ? { ...prev, type } : defaultProfiles[type]));
   };
 
   const logout = () => {
+    setIsDemo(false);
     setBusiness(null);
     setUser(null);
     setToken(null);
+    localStorage.removeItem('paperless_is_demo');
     localStorage.removeItem('paperless_business');
     localStorage.removeItem('paperless_token');
     localStorage.removeItem('paperless_user');
@@ -223,8 +288,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         business,
         user,
         token,
-        isLoggedIn: !!token && (!!user || !!business),
+        isLoggedIn: !isDemo && !!token && !!user,
+        isDemo,
         isLoading,
+        enterDemoMode,
         login,
         register,
         switchBusinessType,

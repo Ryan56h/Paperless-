@@ -154,7 +154,7 @@ export default function GroceryProductsPage() {
     }
 
     const payload = {
-      tenantId: business?.id,
+      tenantId: business?.id || 'BIZ-GROCERY-01',
       name: formData.name,
       category: formData.category || 'Khác',
       price: Number(formData.price),

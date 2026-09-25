@@ -64,14 +64,35 @@ public class ProductService : IProductService
 
     public async Task<ProductDto> CreateProductAsync(string tenantId, CreateProductRequest request)
     {
-        var existingProducts = await _productRepository.FindAsync(p => p.TenantId == tenantId);
-        var count = existingProducts.Count;
-        var productId = $"GP{(count + 1).ToString("D3")}";
+        var resolvedTenantId = !string.IsNullOrWhiteSpace(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        var prefix = resolvedTenantId.Contains("CAFE", StringComparison.OrdinalIgnoreCase) ? "SPC" : "GP";
+
+        var allProducts = await _productRepository.GetAllAsync();
+        int maxSeq = 0;
+        foreach (var p in allProducts)
+        {
+            if (!string.IsNullOrEmpty(p.Id) && p.Id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var numStr = p.Id.Substring(prefix.Length);
+                if (int.TryParse(numStr, out int num) && num > maxSeq)
+                {
+                    maxSeq = num;
+                }
+            }
+        }
+
+        int seq = Math.Max(maxSeq + 1, 1);
+        string productId;
+        do
+        {
+            productId = $"{prefix}{seq:D3}";
+            seq++;
+        } while (allProducts.Any(p => p.Id == productId) || await _productRepository.ExistsAsync(p => p.Id == productId));
 
         var product = new Product
         {
             Id = productId,
-            TenantId = tenantId,
+            TenantId = resolvedTenantId,
             Name = request.Name.Trim(),
             Category = request.Category.Trim(),
             Price = request.Price,

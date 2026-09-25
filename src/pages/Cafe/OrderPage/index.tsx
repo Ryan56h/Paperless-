@@ -681,7 +681,7 @@ export default function CafeOrderPage() {
               <div className="p-2.5 rounded-lg bg-surface-2 border border-border space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 font-bold text-text">
-                    <span>👤 Thêm khách ngồi ghép tại {activeTable?.name}</span>
+                    <span>Thêm khách ngồi ghép tại {activeTable?.name}</span>
                   </div>
                   <button
                     onClick={() => setIsNewGuestMode(false)}
@@ -701,7 +701,7 @@ export default function CafeOrderPage() {
                   />
                 </div>
                 <p className="text-[10px] text-text-dim leading-snug">
-                  👉 Chọn món bên thực đơn cho khách này. Khách có thể trả tiền trước ngay lúc gọi hoặc thanh toán sau khi rời đi.
+                  Chọn món bên thực đơn cho khách này. Khách có thể trả tiền trước ngay lúc gọi hoặc thanh toán sau khi rời đi.
                 </p>
               </div>
             )}
@@ -743,10 +743,10 @@ export default function CafeOrderPage() {
                               setEditingGuestId(currentOrder.id);
                               setEditingGuestName(currentOrder.guestLabel || '');
                             }}
-                            className="text-[10px] text-text-dim hover:text-text cursor-pointer"
+                            className="text-[10px] text-text-dim hover:text-text cursor-pointer underline ml-1"
                             title="Đổi tên / ghi chú khách này"
                           >
-                            ✎
+                            Sửa
                           </button>
                           <span className="text-[10px] text-text-dim font-mono">(#{currentOrder.id})</span>
                         </div>

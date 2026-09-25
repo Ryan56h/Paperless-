@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using PaperLessApi.Data;
 using PaperLessApi.DTOs;
 using PaperLessApi.Models;
 using PaperLessApi.Repositories;
@@ -15,17 +16,20 @@ public class InvoiceService : IInvoiceService
     private readonly IProductRepository _productRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IGenericRepository<Tenant> _tenantRepository;
+    private readonly AppDbContext _context;
 
     public InvoiceService(
         IInvoiceRepository invoiceRepository,
         IProductRepository productRepository,
         ICustomerRepository customerRepository,
-        IGenericRepository<Tenant> tenantRepository)
+        IGenericRepository<Tenant> tenantRepository,
+        AppDbContext context)
     {
         _invoiceRepository = invoiceRepository;
         _productRepository = productRepository;
         _customerRepository = customerRepository;
         _tenantRepository = tenantRepository;
+        _context = context;
     }
 
     public async Task<Invoice?> GetInvoiceAsync(string id)
@@ -56,8 +60,11 @@ public class InvoiceService : IInvoiceService
         string? branchId,
         CreateInvoiceRequest request)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
-        var branchName = tenant?.Name ?? "Cửa hàng Tạp hoá";
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+            var branchName = tenant?.Name ?? "Cửa hàng Tạp hoá";
 
         var today = DateTime.UtcNow.Date;
         var todayStr = DateTime.UtcNow.ToString("yyyyMMdd");
@@ -161,8 +168,8 @@ public class InvoiceService : IInvoiceService
             OrderStatus = "preparing",
             PayMethod = request.PayMethod,
             PayStatus = "paid",
-            SendChannel = request.SendChannel ?? "zalo",
-            SendStatus = "sent",
+            SendChannel = string.Equals(request.SendChannel, "none", StringComparison.OrdinalIgnoreCase) ? "none" : (request.SendChannel ?? "zalo"),
+            SendStatus = string.Equals(request.SendChannel, "none", StringComparison.OrdinalIgnoreCase) ? "none" : "sent",
             Note = request.Note?.Trim(),
             CreatedAt = DateTime.UtcNow,
             Items = invoiceItems
@@ -170,8 +177,16 @@ public class InvoiceService : IInvoiceService
 
         await _invoiceRepository.AddAsync(invoice);
 
+        await transaction.CommitAsync();
+
         return MapToDto(invoice);
     }
+    catch
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
 
     public async Task<List<InvoiceDto>> GetInvoicesAsync(string tenantId, string? status, int limit)
     {

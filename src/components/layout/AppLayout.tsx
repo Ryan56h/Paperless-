@@ -8,7 +8,7 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { business, user, logout } = useAuth();
+  const { business, user, isDemo, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -66,33 +66,53 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {/* Header / Brand */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <NavLink to="/" className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded bg-text text-bg text-xs font-bold flex items-center justify-center">
+            <NavLink to="/" className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-lg bg-[#09261e] text-white text-xs font-black flex items-center justify-center">
                 P
               </span>
-              <span className="font-bold text-sm tracking-tight text-text">
-                Paperless
+              <span className="font-black text-sm tracking-wider uppercase text-text">
+                PAPERLESS<span className="text-amber-500">+</span>
               </span>
             </NavLink>
 
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-surface-2 border border-border text-text-muted">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
               {currentType === 'cafe' ? 'Quán Cafe' : 'Tạp hoá'}
             </span>
           </div>
 
-          <div className="mt-3 p-2 rounded bg-surface-2 border border-border">
-            <p className="text-xs font-medium text-text truncate">
+          <div className="mt-3 p-2.5 rounded-xl bg-surface-2 border border-border">
+            <p className="text-xs font-bold text-text truncate">
               {business?.name || (currentType === 'cafe' ? 'Mộc Lan Cafe' : 'Tạp Hoá Minh Phát')}
             </p>
-            <p className="text-[10px] text-text-dim truncate">
+            <p className="text-[10px] text-text-dim truncate mt-0.5">
               {business?.ownerName || user?.fullName || 'Chủ cửa hàng'}
             </p>
           </div>
+
+          {/* Banner chế độ trải nghiệm */}
+          {isDemo && (
+            <div className="mt-2.5 p-2 rounded-xl bg-amber-400/10 border border-amber-400/30 text-[10px]">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Dùng thử (Demo)
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black text-[9px]">
+                  MOCK
+                </span>
+              </div>
+              <NavLink
+                to="/login"
+                className="block text-center py-1 mt-1 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider transition-colors"
+              >
+                Đăng nhập tài khoản thật
+              </NavLink>
+            </div>
+          )}
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto px-2.5 py-3 flex flex-col gap-1">
-          <p className="px-2 text-[10px] font-semibold text-text-dim uppercase tracking-wider mb-1">
+        <div className="flex-1 overflow-y-auto px-2.5 py-3 flex flex-col gap-1.5">
+          <p className="px-2 text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">
             Menu
           </p>
 
@@ -101,9 +121,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `block px-3 py-2 rounded text-xs font-medium transition-colors ${
+                `block px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors ${
                   isActive
-                    ? 'bg-text text-bg font-semibold'
+                    ? 'bg-[#09261e] text-white shadow-xs'
                     : 'text-text-muted hover:bg-surface-2 hover:text-text'
                 }`
               }

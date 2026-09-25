@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredBusinessType }: ProtectedRouteProps) {
-  const { isLoggedIn, isLoading, business, user } = useAuth();
+  const { isLoggedIn, isDemo, isLoading, business, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -17,13 +17,14 @@ export default function ProtectedRoute({ children, requiredBusinessType }: Prote
       <div className="flex h-screen w-full items-center justify-center bg-bg text-text">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-text/20 border-t-text animate-spin" />
-          <p className="text-xs text-text-muted font-medium">Đang kiểm tra phiên đăng nhập...</p>
+          <p className="text-xs text-text-muted font-medium">Đang kiểm tra phiên làm việc...</p>
         </div>
       </div>
     );
   }
 
-  if (!isLoggedIn) {
+  // Cho phép cả người dùng thật (isLoggedIn) và khách dùng thử (isDemo) trải nghiệm POS
+  if (!isLoggedIn && !isDemo) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

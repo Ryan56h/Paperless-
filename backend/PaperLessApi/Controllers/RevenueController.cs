@@ -30,4 +30,28 @@ public class RevenueController : ControllerBase
         var revenue = await _revenueService.GetGroceryTodayRevenueAsync(tenantId);
         return Ok(revenue);
     }
+
+    [HttpGet("shift")]
+    public async Task<ActionResult<ShiftRevenueResponseDto>> GetShiftRevenue([FromQuery] System.DateTime? date)
+    {
+        var tenantId = GetTenantId();
+        var result = await _revenueService.GetShiftRevenueAsync(tenantId, date);
+        return Ok(result);
+    }
+
+    [HttpGet("daily")]
+    public async Task<ActionResult<DailyRevenueResponseDto>> GetDailyRevenue([FromQuery] System.DateTime? from, [FromQuery] System.DateTime? to)
+    {
+        var tenantId = GetTenantId();
+        var result = await _revenueService.GetDailyRevenueAsync(tenantId, from, to);
+        return Ok(result);
+    }
+
+    [HttpGet("weekly")]
+    public async Task<ActionResult<WeeklyRevenueResponseDto>> GetWeeklyRevenue([FromQuery] int offset = 0)
+    {
+        var tenantId = GetTenantId();
+        var result = await _revenueService.GetWeeklyRevenueAsync(tenantId, offset);
+        return Ok(result);
+    }
 }

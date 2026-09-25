@@ -52,8 +52,8 @@ export interface BackendInvoice {
   orderStatus: 'preparing' | 'ready' | 'completed' | 'cancelled';
   payMethod: 'cash' | 'transfer' | 'qr' | 'vietqr';
   payStatus: string;
-  sendChannel: 'zalo' | 'sms' | 'both';
-  sendStatus: 'sent' | 'pending' | 'failed';
+  sendChannel: 'zalo' | 'sms' | 'both' | 'none';
+  sendStatus: 'sent' | 'pending' | 'failed' | 'none';
   note?: string;
   publicToken: string;
   createdAt: string;
@@ -66,7 +66,7 @@ export interface CreateInvoicePayload {
   payMethod: 'cash' | 'qr' | 'transfer';
   cashGiven?: number;
   note?: string;
-  sendChannel?: 'zalo' | 'sms' | 'both';
+  sendChannel?: 'zalo' | 'sms' | 'both' | 'none';
   items: {
     productId?: string;
     name: string;
@@ -84,6 +84,49 @@ export interface TodayRevenueData {
   digitalRevenue: number;
   hourlyData: { hour: string; revenue: number; orders: number }[];
   topSelling: { name: string; quantity: number; revenue: number; category: string }[];
+}
+
+export interface ShiftRevenueItem {
+  shiftName: string;
+  timeRange: string;
+  totalRevenue: number;
+  orderCount: number;
+  cashRevenue: number;
+  digitalRevenue: number;
+}
+
+export interface ShiftRevenueData {
+  date: string;
+  totalRevenue: number;
+  totalOrders: number;
+  shifts: ShiftRevenueItem[];
+}
+
+export interface DailyRevenueItem {
+  date: string;
+  dayOfWeek: string;
+  totalRevenue: number;
+  orderCount: number;
+  cashRevenue: number;
+  digitalRevenue: number;
+}
+
+export interface DailyRevenueData {
+  from: string;
+  to: string;
+  totalRevenue: number;
+  totalOrders: number;
+  averageDailyRevenue: number;
+  days: DailyRevenueItem[];
+}
+
+export interface WeeklyRevenueData {
+  weekLabel: string;
+  from: string;
+  to: string;
+  totalRevenue: number;
+  totalOrders: number;
+  days: DailyRevenueItem[];
 }
 
 // 1. Fetch products list from BE
@@ -228,5 +271,54 @@ export async function lookupCustomerByPhoneApi(phone: string): Promise<{
   });
 
   if (!res.ok) return null;
+  return res.json();
+}
+
+// 10. Fetch shift revenue
+export async function fetchShiftRevenueApi(date?: string): Promise<ShiftRevenueData> {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+
+  const url = `${API_URL}/revenue/shift${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error('Không thể tải doanh thu theo ca.');
+  }
+
+  return res.json();
+}
+
+// 11. Fetch daily revenue
+export async function fetchDailyRevenueApi(from?: string, to?: string): Promise<DailyRevenueData> {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+
+  const url = `${API_URL}/revenue/daily${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error('Không thể tải doanh thu theo ngày.');
+  }
+
+  return res.json();
+}
+
+// 12. Fetch weekly revenue
+export async function fetchWeeklyRevenueApi(offset = 0): Promise<WeeklyRevenueData> {
+  const url = `${API_URL}/revenue/weekly?offset=${offset}`;
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error('Không thể tải doanh thu theo tuần.');
+  }
+
   return res.json();
 }

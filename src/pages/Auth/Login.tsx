@@ -6,7 +6,7 @@ import { validateEmail, validatePassword } from '../../utils/validators';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isLoggedIn, business, user, logout } = useAuth();
 
   const [email, setEmail] = useState(() => {
     return localStorage.getItem('paperless_remember_email') || '';
@@ -60,27 +60,47 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Đăng nhập"
-      subtitle="Đăng nhập để vào hệ thống quản lý bán hàng"
+      title="ĐĂNG NHẬP HỆ THỐNG"
+      subtitle="Đăng nhập để vào hệ thống quản lý bán hàng PaperLess POS"
     >
-
+      {/* Thông báo nếu đã có phiên đăng nhập */}
+      {isLoggedIn && (
+        <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
+          <p className="text-emerald-950 font-bold uppercase tracking-wider mb-1">
+            Đang đăng nhập: {business?.name || user?.fullName || 'Chủ cửa hàng'}
+          </p>
+          <p className="text-slate-600 text-[11px] mb-3">
+            Bạn đang có phiên hoạt động. Bạn có thể vào thẳng màn hình bán hàng hoặc đăng nhập tài khoản khác.
+          </p>
+          <div className="flex gap-2">
+            <Link
+              to={business?.type === 'cafe' ? '/app/cafe/order' : '/app/grocery/order'}
+              className="flex-1 py-2 text-center rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-xs"
+            >
+              Vào POS ngay
+            </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className="px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium flex items-center gap-2">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>{errorMessage}</span>
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium">
+          {errorMessage}
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleLogin} className="space-y-3.5">
-        
-
+      <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-text mb-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
             Email tài khoản
           </label>
           <input
@@ -90,54 +110,46 @@ export default function Login() {
             placeholder="cuahang@paperless.vn"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-surface-2 border border-border text-text text-xs focus:outline-none focus:border-text disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-600 focus:bg-white disabled:opacity-50"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-text mb-1">Mật khẩu</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            Mật khẩu
+          </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               required
               disabled={isSubmitting}
-              placeholder="••••••••"
+              placeholder="Nhập mật khẩu..."
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full pl-3 pr-9 py-2 rounded bg-surface-2 border border-border text-text text-xs focus:outline-none focus:border-text disabled:opacity-50"
+              className="w-full pl-4 pr-16 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-600 focus:bg-white disabled:opacity-50"
             />
             <button
               type="button"
               tabIndex={-1}
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text cursor-pointer p-0.5"
-              title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 text-[11px] font-bold uppercase cursor-pointer"
             >
-              {showPassword ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
+              {showPassword ? 'Ẩn' : 'Hiện'}
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs pt-0.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none text-text-muted hover:text-text">
+        <div className="flex items-center justify-between text-xs pt-1">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-slate-600 hover:text-slate-900">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={e => setRememberMe(e.target.checked)}
-              className="rounded border-border bg-surface-2 text-text focus:ring-0 focus:outline-none accent-text cursor-pointer w-3.5 h-3.5"
+              className="rounded border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer w-4 h-4"
             />
             <span>Ghi nhớ đăng nhập</span>
           </label>
-          <Link to="/forgot-password" className="text-text-muted hover:text-text hover:underline text-[11px]">
+          <Link to="/forgot-password" className="text-emerald-700 hover:underline font-semibold text-[11px]">
             Quên mật khẩu?
           </Link>
         </div>
@@ -145,23 +157,16 @@ export default function Login() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-2.5 rounded font-bold bg-text text-bg hover:opacity-90 transition-opacity cursor-pointer text-xs disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl font-black uppercase tracking-wider bg-amber-400 hover:bg-amber-500 text-slate-950 transition-colors cursor-pointer text-xs disabled:opacity-60 shadow-sm"
         >
-          {isSubmitting ? (
-            <>
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-bg/30 border-t-bg animate-spin" />
-              <span>Đang đăng nhập...</span>
-            </>
-          ) : (
-            'Đăng nhập'
-          )}
+          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập vào hệ thống'}
         </button>
       </form>
 
-      <div className="mt-5 pt-3 border-t border-border text-center text-xs text-text-muted">
-        Chưa có tài khoản?{' '}
-        <Link to="/register" className="text-text font-semibold underline">
-          Đăng ký
+      <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+        Chưa có tài khoản cửa hàng?{' '}
+        <Link to="/register" className="text-emerald-700 font-bold uppercase tracking-wider hover:underline">
+          Đăng ký ngay
         </Link>
       </div>
     </AuthLayout>

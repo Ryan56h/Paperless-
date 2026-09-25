@@ -24,14 +24,10 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetProducts([FromQuery] string tenantId)
+    public async Task<IActionResult> GetProducts([FromQuery] string? tenantId)
     {
-        if (string.IsNullOrEmpty(tenantId))
-        {
-            return BadRequest(new { message = "tenantId is required" });
-        }
-
-        var products = await _productService.GetProductsAsync(tenantId, null, null);
+        var tid = !string.IsNullOrWhiteSpace(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        var products = await _productService.GetProductsAsync(tid, null, null);
         return Ok(products);
     }
 
@@ -43,7 +39,13 @@ public class ProductController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var created = await _productService.CreateProductAsync(product.TenantId, new CreateProductRequest
+        var tenantId = !string.IsNullOrWhiteSpace(product.TenantId)
+            ? product.TenantId
+            : (!string.IsNullOrWhiteSpace(User.FindFirst("tenant_id")?.Value)
+                ? User.FindFirst("tenant_id")!.Value
+                : "BIZ-GROCERY-01");
+
+        var created = await _productService.CreateProductAsync(tenantId, new CreateProductRequest
         {
             Name = product.Name,
             Category = product.Category,
@@ -55,7 +57,7 @@ public class ProductController : ControllerBase
             ImageUrl = product.ImageUrl
         });
 
-        return CreatedAtAction(nameof(GetProducts), new { tenantId = product.TenantId }, created);
+        return CreatedAtAction(nameof(GetProducts), new { tenantId = tenantId }, created);
     }
 
     [HttpPut("{id}")]

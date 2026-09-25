@@ -172,6 +172,54 @@ public class TodayRevenueDto
     public List<TopProductDto> TopSelling { get; set; } = new();
 }
 
+public class ShiftRevenueDto
+{
+    public string ShiftName { get; set; } = string.Empty;
+    public string TimeRange { get; set; } = string.Empty;
+    public long TotalRevenue { get; set; }
+    public int OrderCount { get; set; }
+    public long CashRevenue { get; set; }
+    public long DigitalRevenue { get; set; }
+}
+
+public class ShiftRevenueResponseDto
+{
+    public string Date { get; set; } = string.Empty;
+    public long TotalRevenue { get; set; }
+    public int TotalOrders { get; set; }
+    public List<ShiftRevenueDto> Shifts { get; set; } = new();
+}
+
+public class DailyRevenueItemDto
+{
+    public string Date { get; set; } = string.Empty;
+    public string DayOfWeek { get; set; } = string.Empty;
+    public long TotalRevenue { get; set; }
+    public int OrderCount { get; set; }
+    public long CashRevenue { get; set; }
+    public long DigitalRevenue { get; set; }
+}
+
+public class DailyRevenueResponseDto
+{
+    public string From { get; set; } = string.Empty;
+    public string To { get; set; } = string.Empty;
+    public long TotalRevenue { get; set; }
+    public int TotalOrders { get; set; }
+    public long AverageDailyRevenue { get; set; }
+    public List<DailyRevenueItemDto> Days { get; set; } = new();
+}
+
+public class WeeklyRevenueResponseDto
+{
+    public string WeekLabel { get; set; } = string.Empty;
+    public string From { get; set; } = string.Empty;
+    public string To { get; set; } = string.Empty;
+    public long TotalRevenue { get; set; }
+    public int TotalOrders { get; set; }
+    public List<DailyRevenueItemDto> Days { get; set; } = new();
+}
+
 // --- CUSTOMER DTOS ---
 public class CustomerDto
 {
