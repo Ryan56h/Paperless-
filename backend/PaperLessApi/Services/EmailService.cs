@@ -91,7 +91,7 @@ public class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(password))
         {
-            _logger.LogWarning("⚠️ [EmailService] SMTP chưa được cấu hình trong appsettings.json. Email gửi tới {ToEmail} với tiêu đề '{Subject}'.", toEmail, subject);
+            _logger.LogWarning(" [EmailService] SMTP chưa được cấu hình trong appsettings.json. Email gửi tới {ToEmail} với tiêu đề '{Subject}'.", toEmail, subject);
             return false;
         }
 
