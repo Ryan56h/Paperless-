@@ -57,6 +57,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' },
   ];
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   const activeLinks = currentType === 'cafe' ? cafeLinks : groceryLinks;
 
   return (
@@ -144,11 +152,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {theme === 'light' ? 'Giao diện tối' : 'Giao diện sáng'}
           </button>
           <button
-            onClick={() => {
-              logout();
-              navigate('/login', { replace: true });
-            }}
-            className="px-3 py-1.5 rounded text-xs text-text-muted bg-surface-2 hover:text-text border border-border cursor-pointer transition-colors"
+            type="button"
+            onClick={() => setShowLogoutConfirm(true)}
+            className="px-3 py-1.5 rounded text-xs text-text-muted bg-surface-2 hover:text-red-500 hover:border-red-500/30 border border-border cursor-pointer transition-colors"
           >
             Thoát
           </button>
@@ -183,7 +189,59 @@ export default function AppLayout({ children }: AppLayoutProps) {
         >
            <span className="px-1">Đổi Theme</span>
         </button>
+        <button 
+          type="button"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex flex-col items-center justify-center flex-1 h-full text-[10px] sm:text-xs font-medium text-red-500/80 hover:text-red-500 transition-colors text-center"
+        >
+           <span className="px-1">Thoát</span>
+        </button>
       </nav>
+
+      {/* Warning Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-surface border border-border rounded-xl p-5 shadow-2xl text-center space-y-4">
+            {/* Warning Icon Badge */}
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 mx-auto flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+
+            {/* Title & Message */}
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-text">Xác nhận đăng xuất</h3>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Bạn có chắc chắn muốn thoát về màn hình đăng nhập không?
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-surface-2 hover:bg-border/60 text-text border border-border cursor-pointer transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer transition-colors shadow-sm"
+              >
+                Đồng ý thoát
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
