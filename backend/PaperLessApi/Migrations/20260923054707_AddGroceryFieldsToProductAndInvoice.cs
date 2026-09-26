@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,12 +10,12 @@ namespace PaperLessApi.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Barcode",
-                table: "Products",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: true);
+            // migrationBuilder.AddColumn<string>(
+            //     name: "Barcode",
+            //     table: "Products",
+            //     type: "character varying(50)",
+            //     maxLength: 50,
+            //     nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "ImageUrl",
@@ -24,12 +24,12 @@ namespace PaperLessApi.Migrations
                 maxLength: 500,
                 nullable: true);
 
-            migrationBuilder.AddColumn<bool>(
-                name: "Popular",
-                table: "Products",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
+            // migrationBuilder.AddColumn<bool>(
+            //     name: "Popular",
+            //     table: "Products",
+            //     type: "boolean",
+            //     nullable: false,
+            //     defaultValue: false);
 
             migrationBuilder.AddColumn<int>(
                 name: "Stock",
@@ -38,13 +38,13 @@ namespace PaperLessApi.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            migrationBuilder.AddColumn<string>(
-                name: "Unit",
-                table: "Products",
-                type: "character varying(30)",
-                maxLength: 30,
-                nullable: false,
-                defaultValue: "");
+            // migrationBuilder.AddColumn<string>(
+            //     name: "Unit",
+            //     table: "Products",
+            //     type: "character varying(30)",
+            //     maxLength: 30,
+            //     nullable: false,
+            //     defaultValue: "");
 
             migrationBuilder.AddColumn<long>(
                 name: "CashGiven",

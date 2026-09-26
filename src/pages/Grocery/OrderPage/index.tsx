@@ -9,6 +9,7 @@ import {
   fetchProductCategoriesApi,
   createInvoiceApi,
   lookupCustomerByPhoneApi,
+  createCustomerApi,
   type BackendInvoice,
 } from '../../../services/groceryApi';
 
@@ -40,6 +41,9 @@ export default function GroceryOrderPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPoints, setCustomerPoints] = useState<number | null>(null);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [customerNotFound, setCustomerNotFound] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const [isScanning, setIsScanning] = useState(false);
@@ -88,53 +92,68 @@ export default function GroceryOrderPage() {
           setIsScanning(false);
           setScanStatus(null);
 
-          const product = products.find(p => p.barcode === decodedText || p.id === decodedText);
-          if (product) {
+          // 1. Tìm trong bộ nhớ trước
+          const localProduct = products.find(p => p.barcode === decodedText || p.id === decodedText);
+          if (localProduct) {
             setCart(prev => {
-              const existing = prev.find(item => item.id === product.id);
+              const existing = prev.find(item => item.id === localProduct.id);
               if (existing) {
                 return prev.map(item =>
-                  item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                  item.id === localProduct.id ? { ...item, quantity: item.quantity + 1 } : item
                 );
               }
-              return [...prev, { ...product, quantity: 1 }];
+              return [...prev, { ...localProduct, quantity: 1 }];
             });
             setMobileTab('cart');
           } else {
-            // Tự động tìm trên mạng nếu không có trong DB
-            fetch(`/api/product/lookup-barcode/${decodedText}`)
+            // 2. Không có trong bộ nhớ -> query Database qua proxy
+            const token = localStorage.getItem('paperless_token');
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            fetch(`/api/products?search=${encodeURIComponent(decodedText)}`, { headers })
               .then(res => {
-                if (!res.ok) throw new Error('Not found');
+                if (!res.ok) throw new Error('API error');
                 return res.json();
               })
-              .then(data => {
-                if (data.name) {
-                  const newProduct = {
-                    tenantId: business?.id || 'BIZ-GROCERY-01',
-                    name: data.name,
-                    category: 'Mới thêm',
-                    price: 15000,
-                    unit: 'Cái',
-                    barcode: decodedText,
-                    popular: false,
+              .then((dbProducts: any[]) => {
+                const dbProduct = dbProducts.find((p: any) => p.barcode === decodedText);
+                if (dbProduct) {
+                  // Tìm thấy trong DB -> cập nhật bộ nhớ và thêm vào giỏ
+                  const mapped = {
+                    id: dbProduct.id,
+                    name: dbProduct.name,
+                    category: dbProduct.category,
+                    price: dbProduct.price,
+                    unit: dbProduct.unit,
+                    barcode: dbProduct.barcode,
+                    stock: dbProduct.stock,
+                    popular: dbProduct.popular,
+                    image: dbProduct.imageUrl,
                   };
-
-                  return fetch('/api/product', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProduct),
+                  setProducts(prev => {
+                    if (!prev.find(p => p.id === mapped.id)) {
+                      return [...prev, mapped];
+                    }
+                    return prev;
                   });
+                  setCart(prev => {
+                    const existing = prev.find(item => item.id === mapped.id);
+                    if (existing) {
+                      return prev.map(item =>
+                        item.id === mapped.id ? { ...item, quantity: item.quantity + 1 } : item
+                      );
+                    }
+                    return [...prev, { ...mapped, quantity: 1 }];
+                  });
+                  setMobileTab('cart');
+                } else {
+                  // 3. Không có trong DB -> báo nhân viên tự thêm
+                  alert(`Mã vạch "${decodedText}" chưa có trong hệ thống!\nVui lòng thêm sản phẩm này ở trang Quản lý sản phẩm trước.`);
                 }
-                throw new Error('No name');
-              })
-              .then(res => res.json())
-              .then(createdProduct => {
-                setProducts(prev => [createdProduct, ...prev]);
-                setCart(prev => [...prev, { ...createdProduct, quantity: 1 }]);
-                setMobileTab('cart');
               })
               .catch(() => {
-                alert(`Không tìm thấy mã vạch ${decodedText} trên hệ thống!`);
+                alert(`Lỗi khi tra cứu mã vạch ${decodedText}!`);
               });
           }
         },
@@ -186,18 +205,39 @@ export default function GroceryOrderPage() {
   const handleLookupCustomer = async () => {
     if (!customerPhone.trim()) return;
     setIsSearchingCustomer(true);
+    setCustomerNotFound(false);
     try {
       const cust = await lookupCustomerByPhoneApi(customerPhone.trim());
       if (cust) {
         setCustomerName(cust.name);
         setCustomerPoints(cust.points);
       } else {
+        setCustomerName('');
         setCustomerPoints(null);
+        setCustomerNotFound(true);
       }
     } catch {
       //
     } finally {
       setIsSearchingCustomer(false);
+    }
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerName.trim() || !customerPhone.trim()) return;
+    setIsCreatingCustomer(true);
+    try {
+      const cust = await createCustomerApi({ name: newCustomerName.trim(), phone: customerPhone.trim() });
+      if (cust) {
+        setCustomerName(cust.name);
+        setCustomerPoints(cust.points);
+        setCustomerNotFound(false);
+        setNewCustomerName('');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Lỗi khi tạo khách hàng');
+    } finally {
+      setIsCreatingCustomer(false);
     }
   };
 
@@ -648,6 +688,28 @@ export default function GroceryOrderPage() {
                         Điểm: {customerPoints}
                       </span>
                     )}
+                  </div>
+                )}
+                {customerNotFound && !customerName && (
+                  <div className="mt-2 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50">
+                    <p className="text-xs text-slate-500 mb-2">Chưa có khách hàng này, tạo mới?</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Tên khách hàng"
+                        value={newCustomerName}
+                        onChange={e => setNewCustomerName(e.target.value)}
+                        className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateCustomer}
+                        disabled={isCreatingCustomer || !newCustomerName.trim()}
+                        className="px-3 py-2 bg-emerald-600 text-white text-xs rounded-xl hover:bg-emerald-700 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {isCreatingCustomer ? '...' : 'Tạo mới'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

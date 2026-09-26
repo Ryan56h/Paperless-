@@ -89,7 +89,8 @@ public class ProductController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduct(string id, [FromQuery] string? tenantId)
     {
-        var tid = !string.IsNullOrEmpty(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        var claimTenant = User.FindFirst("tenant_id")?.Value;
+        var tid = !string.IsNullOrEmpty(tenantId) ? tenantId : (!string.IsNullOrEmpty(claimTenant) ? claimTenant : "BIZ-GROCERY-01");
         var success = await _productService.DeleteProductAsync(tid, id);
         if (!success)
         {

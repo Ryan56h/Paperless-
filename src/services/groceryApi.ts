@@ -322,3 +322,24 @@ export async function fetchWeeklyRevenueApi(offset = 0): Promise<WeeklyRevenueDa
 
   return res.json();
 }
+
+
+// 13. Create new customer
+export async function createCustomerApi(payload: { name: string; phone: string }): Promise<{
+  id: string;
+  name: string;
+  phone: string;
+  points: number;
+  tier: string;
+}> {
+  const res = await fetch(`${API_URL}/customers`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.message || 'Không thể tạo khách hàng');
+  }
+  return res.json();
+}

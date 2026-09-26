@@ -65,6 +65,35 @@ public class ProductService : IProductService
     public async Task<ProductDto> CreateProductAsync(string tenantId, CreateProductRequest request)
     {
         var resolvedTenantId = !string.IsNullOrWhiteSpace(tenantId) ? tenantId : "BIZ-GROCERY-01";
+
+        // Check duplicate barcode - nếu barcode đã tồn tại thì trả về sản phẩm cũ
+        if (!string.IsNullOrWhiteSpace(request.Barcode))
+        {
+            var existing = await _productRepository.GetByBarcodeAsync(resolvedTenantId, request.Barcode.Trim());
+            if (existing != null)
+            {
+                // Nếu sản phẩm bị soft-delete, kích hoạt lại
+                if (!existing.IsAvailable)
+                {
+                    existing.IsAvailable = true;
+                    await _productRepository.SaveChangesAsync();
+                }
+                return new ProductDto
+                {
+                    Id = existing.Id,
+                    Name = existing.Name,
+                    Category = existing.Category,
+                    Price = existing.Price,
+                    Unit = existing.Unit,
+                    Barcode = existing.Barcode,
+                    Stock = existing.Stock,
+                    Popular = existing.Popular,
+                    ImageUrl = existing.ImageUrl,
+                    IsAvailable = existing.IsAvailable
+                };
+            }
+        }
+
         var prefix = resolvedTenantId.Contains("CAFE", StringComparison.OrdinalIgnoreCase) ? "SPC" : "GP";
 
         var allProducts = await _productRepository.GetAllAsync();

@@ -197,7 +197,7 @@ export default function GroceryProductsPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
       try {
-        const res = await fetch(`/api/product/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/product/${id}?tenantId=${business?.id || 'BIZ-GROCERY-01'}`, { method: 'DELETE' });
         if (res.ok) {
           setProducts(products.filter(p => p.id !== id));
         }
@@ -454,3 +454,4 @@ export default function GroceryProductsPage() {
     </AppLayout>
   );
 }
+
