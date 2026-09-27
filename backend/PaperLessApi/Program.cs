@@ -31,7 +31,11 @@ if (!string.IsNullOrEmpty(databaseUrl) && (databaseUrl.StartsWith("postgres://")
     var password = userInfo.Length > 1 ? userInfo[1] : "";
     var dbPort = uri.Port > 0 ? uri.Port : 5432;
     var database = uri.AbsolutePath.TrimStart('/');
-    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;GssEncryptionMode=Disable";
+}
+else if (!string.IsNullOrEmpty(connectionString) && !connectionString.Contains("GssEncryptionMode", StringComparison.OrdinalIgnoreCase))
+{
+    connectionString += ";GssEncryptionMode=Disable";
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -132,6 +136,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-await DbInitializer.SeedAsync(app.Services);
+try
+{
+    await DbInitializer.SeedAsync(app.Services);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[DbInitializer Warning]: {ex.Message}");
+}
 
 app.Run();

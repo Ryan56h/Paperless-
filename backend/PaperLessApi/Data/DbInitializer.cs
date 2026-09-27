@@ -62,6 +62,7 @@ public static class DbInitializer
                 PlanId = defaultPlanId
             };
             context.Tenants.Add(groceryTenant);
+            await context.SaveChangesAsync();
 
             var groceryBranch = new Branch
             {
@@ -71,6 +72,7 @@ public static class DbInitializer
                 Address = "124 Đường 3/2, Quận 10, TP. Hồ Chí Minh"
             };
             context.Branches.Add(groceryBranch);
+            await context.SaveChangesAsync();
 
             if (!await context.Users.AnyAsync(u => u.Email == "minhphat.mart@gmail.com"))
             {
@@ -87,6 +89,7 @@ public static class DbInitializer
                     Role = "owner"
                 };
                 context.Users.Add(groceryOwner);
+                await context.SaveChangesAsync();
             }
 
             var groceryProducts = new List<Product>
@@ -151,6 +154,7 @@ public static class DbInitializer
                 PlanId = defaultPlanId
             };
             context.Tenants.Add(cafeTenant);
+            await context.SaveChangesAsync();
 
             var cafeBranch = new Branch
             {
@@ -160,6 +164,7 @@ public static class DbInitializer
                 Address = "45 Nguyễn Đình Chiểu, Quận 3, TP. Hồ Chí Minh"
             };
             context.Branches.Add(cafeBranch);
+            await context.SaveChangesAsync();
 
             if (!await context.Users.AnyAsync(u => u.Email == "moclan.coffee@gmail.com"))
             {
@@ -176,6 +181,7 @@ public static class DbInitializer
                     Role = "owner"
                 };
                 context.Users.Add(cafeOwner);
+                await context.SaveChangesAsync();
             }
 
             var cafeProducts = new List<Product>
