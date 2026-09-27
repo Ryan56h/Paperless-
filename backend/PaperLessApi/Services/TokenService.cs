@@ -34,6 +34,8 @@ public class TokenService : ITokenService
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.FullName),
+            new Claim(ClaimTypes.Role, user.Role ?? "staff"),
+            new Claim("role", user.Role ?? "staff"),
             new Claim("tenant_id", user.TenantId ?? string.Empty),
             new Claim("tenant_name", tenantName ?? string.Empty),
             new Claim("business_type", user.BusinessType ?? businessType ?? "grocery"),

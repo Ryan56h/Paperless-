@@ -45,16 +45,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }
   }, [userBusinessType, location.pathname, navigate]);
 
+  const userRole = user?.role || 'owner';
+
   const groceryLinks = [
     { to: '/app/grocery/order', label: 'Bán hàng (POS)' },
-    { to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' },
+    ...(userRole !== 'staff' ? [{ to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' }] : []),
     { to: '/app/grocery/products', label: 'Quản lý sản phẩm' },
   ];
 
   const cafeLinks = [
     { to: '/app/cafe/order', label: 'Sơ đồ bàn & Gọi món' },
     { to: '/app/cafe/display', label: 'Màn hình bếp (KDS)' },
-    { to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' },
+    ...(userRole !== 'staff' ? [{ to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' }] : []),
   ];
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -92,9 +94,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <p className="text-xs font-bold text-text truncate">
               {business?.name || (currentType === 'cafe' ? 'Mộc Lan Cafe' : 'Tạp Hoá Minh Phát')}
             </p>
-            <p className="text-[10px] text-text-dim truncate mt-0.5">
-              {business?.ownerName || user?.fullName || 'Chủ cửa hàng'}
-            </p>
+            <div className="flex items-center justify-between mt-1 gap-1.5">
+              <p className="text-[10px] text-text-dim truncate">
+                {user?.fullName || business?.ownerName || 'Chủ cửa hàng'}
+              </p>
+              {user?.role && (
+                <span className={`text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 ${
+                  user.role === 'admin'
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800'
+                    : user.role === 'owner'
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                    : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
+                }`}>
+                  {user.role === 'admin' ? 'Admin' : user.role === 'owner' ? 'Chủ shop' : 'Nhân viên'}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Banner chế độ trải nghiệm */}

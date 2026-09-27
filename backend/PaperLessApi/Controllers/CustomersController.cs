@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaperLessApi.DTOs;
 using PaperLessApi.Services;
 
 namespace PaperLessApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CustomersController : ControllerBase
@@ -18,22 +20,30 @@ public class CustomersController : ControllerBase
         _customerService = customerService;
     }
 
-    private string GetTenantId()
+    private string? GetTenantId(string? requestedTenantId = null)
     {
-        var tenantId = User.FindFirstValue("tenant_id");
-        return !string.IsNullOrEmpty(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        if (User.IsInRole("admin") && !string.IsNullOrWhiteSpace(requestedTenantId))
+        {
+            return requestedTenantId;
+        }
+        return User.FindFirstValue("tenant_id");
     }
 
     [HttpGet("lookup")]
-    public async Task<ActionResult<CustomerDto>> Lookup([FromQuery] string phone)
+    public async Task<ActionResult<CustomerDto>> Lookup([FromQuery] string phone, [FromQuery] string? tenantId)
     {
         if (string.IsNullOrWhiteSpace(phone))
         {
             return BadRequest(new { message = "Vui lòng nhập số điện thoại." });
         }
 
-        var tenantId = GetTenantId();
-        var customer = await _customerService.LookupByPhoneAsync(tenantId, phone);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var customer = await _customerService.LookupByPhoneAsync(tid, phone);
 
         if (customer == null)
         {
@@ -44,18 +54,28 @@ public class CustomersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CustomerDto>>> GetCustomers([FromQuery] int limit = 50)
+    public async Task<ActionResult<List<CustomerDto>>> GetCustomers([FromQuery] int limit = 50, [FromQuery] string? tenantId = null)
     {
-        var tenantId = GetTenantId();
-        var customers = await _customerService.GetCustomersAsync(tenantId, limit);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var customers = await _customerService.GetCustomersAsync(tid, limit);
         return Ok(customers);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<CustomerDto>> GetCustomerById(string id)
+    public async Task<ActionResult<CustomerDto>> GetCustomerById(string id, [FromQuery] string? tenantId = null)
     {
-        var tenantId = GetTenantId();
-        var customer = await _customerService.GetCustomerByIdAsync(tenantId, id);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var customer = await _customerService.GetCustomerByIdAsync(tid, id);
         if (customer == null)
         {
             return NotFound(new { message = "Không tìm thấy khách hàng." });
@@ -65,10 +85,15 @@ public class CustomersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CustomerDto>> CreateCustomer([FromBody] CreateCustomerRequest request)
+    public async Task<ActionResult<CustomerDto>> CreateCustomer([FromBody] CreateCustomerRequest request, [FromQuery] string? tenantId = null)
     {
-        var tenantId = GetTenantId();
-        var customer = await _customerService.CreateCustomerAsync(tenantId, request);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var customer = await _customerService.CreateCustomerAsync(tid, request);
         if (customer == null)
         {
             return BadRequest(new { message = "Số điện thoại này đã được đăng ký." });
@@ -77,3 +102,4 @@ public class CustomersController : ControllerBase
         return Ok(customer);
     }
 }
+

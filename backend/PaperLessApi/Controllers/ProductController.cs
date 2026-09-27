@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaperLessApi.DTOs;
 using PaperLessApi.Models;
@@ -10,6 +12,7 @@ using PaperLessApi.Services;
 
 namespace PaperLessApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProductController : ControllerBase
@@ -23,14 +26,29 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
 
+    private string? GetTenantId(string? requestedTenantId = null)
+    {
+        if (User.IsInRole("admin") && !string.IsNullOrWhiteSpace(requestedTenantId))
+        {
+            return requestedTenantId;
+        }
+        return User.FindFirst("tenant_id")?.Value;
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetProducts([FromQuery] string? tenantId)
     {
-        var tid = !string.IsNullOrWhiteSpace(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
         var products = await _productService.GetProductsAsync(tid, null, null);
         return Ok(products);
     }
 
+    [Authorize(Roles = "owner,admin")]
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
     {
@@ -39,11 +57,11 @@ public class ProductController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var tenantId = !string.IsNullOrWhiteSpace(product.TenantId)
-            ? product.TenantId
-            : (!string.IsNullOrWhiteSpace(User.FindFirst("tenant_id")?.Value)
-                ? User.FindFirst("tenant_id")!.Value
-                : "BIZ-GROCERY-01");
+        var tenantId = GetTenantId(product.TenantId);
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
 
         var created = await _productService.CreateProductAsync(tenantId, new CreateProductRequest
         {
@@ -60,10 +78,15 @@ public class ProductController : ControllerBase
         return CreatedAtAction(nameof(GetProducts), new { tenantId = tenantId }, created);
     }
 
+    [Authorize(Roles = "owner,admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] Product updatedProduct)
     {
-        var tenantId = !string.IsNullOrEmpty(updatedProduct.TenantId) ? updatedProduct.TenantId : "BIZ-GROCERY-01";
+        var tenantId = GetTenantId(updatedProduct.TenantId);
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
 
         var updated = await _productService.UpdateProductAsync(tenantId, id, new UpdateProductRequest
         {
@@ -86,11 +109,16 @@ public class ProductController : ControllerBase
         return Ok(updated);
     }
 
+    [Authorize(Roles = "owner,admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduct(string id, [FromQuery] string? tenantId)
     {
-        var claimTenant = User.FindFirst("tenant_id")?.Value;
-        var tid = !string.IsNullOrEmpty(tenantId) ? tenantId : (!string.IsNullOrEmpty(claimTenant) ? claimTenant : "BIZ-GROCERY-01");
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
         var success = await _productService.DeleteProductAsync(tid, id);
         if (!success)
         {
@@ -100,6 +128,7 @@ public class ProductController : ControllerBase
         return Ok(new { message = "Product deleted successfully" });
     }
 
+    [AllowAnonymous]
     [HttpGet("lookup-barcode/{barcode}")]
     public async Task<IActionResult> LookupBarcode(string barcode)
     {

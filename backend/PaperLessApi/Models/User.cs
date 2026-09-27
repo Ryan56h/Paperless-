@@ -32,6 +32,10 @@ public class User
     [MaxLength(50)]
     public string BusinessType { get; set; } = "grocery";
 
+    [Required]
+    [MaxLength(20)]
+    public string Role { get; set; } = "staff"; // "admin", "owner", "staff"
+
     public string? BranchId { get; set; }
     public Branch? Branch { get; set; }
 

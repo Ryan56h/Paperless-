@@ -153,7 +153,8 @@ public class AuthController : ControllerBase
             Email = request.Email,
             Phone = request.Phone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            BusinessType = businessType
+            BusinessType = businessType,
+            Role = "owner"
         };
         _context.Users.Add(user);
 
@@ -170,6 +171,7 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                Role = user.Role,
                 TenantId = tenant.Id,
                 TenantName = tenant.Name,
                 BusinessType = user.BusinessType,
@@ -247,6 +249,7 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                Role = user.Role,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name,
                 BusinessType = user.BusinessType ?? user.Tenant?.BusinessType,
@@ -298,6 +301,7 @@ public class AuthController : ControllerBase
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                Role = user.Role,
                 TenantId = user.TenantId,
                 TenantName = user.Tenant?.Name,
                 BusinessType = user.BusinessType ?? user.Tenant?.BusinessType,

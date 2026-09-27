@@ -19,10 +19,13 @@ public class InvoicesController : ControllerBase
         _invoiceService = invoiceService;
     }
 
-    private string GetTenantId()
+    private string? GetTenantId(string? requestedTenantId = null)
     {
-        var tenantId = User.FindFirstValue("tenant_id");
-        return !string.IsNullOrEmpty(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        if (User.IsInRole("admin") && !string.IsNullOrWhiteSpace(requestedTenantId))
+        {
+            return requestedTenantId;
+        }
+        return User.FindFirstValue("tenant_id");
     }
 
     private string GetUserName()
@@ -36,10 +39,16 @@ public class InvoicesController : ControllerBase
     }
 
     // POS CHECKOUT: Tạo hóa đơn mới
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<InvoiceDto>> CreateInvoice([FromBody] CreateInvoiceRequest request)
     {
         var tenantId = GetTenantId();
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
         var staffName = GetUserName();
         var branchId = GetBranchId();
 
@@ -48,17 +57,24 @@ public class InvoicesController : ControllerBase
     }
 
     // Danh sách hóa đơn của tenant (có phân loại trạng thái order cho KDS/Display)
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<InvoiceDto>>> GetInvoices(
         [FromQuery] string? status,
-        [FromQuery] int limit = 50)
+        [FromQuery] int limit = 50,
+        [FromQuery] string? tenantId = null)
     {
-        var tenantId = GetTenantId();
-        var invoices = await _invoiceService.GetInvoicesAsync(tenantId, status, limit);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var invoices = await _invoiceService.GetInvoicesAsync(tid, status, limit);
         return Ok(invoices);
     }
 
-    // Lấy chi tiết 1 hóa đơn
+    // Lấy chi tiết 1 hóa đơn (Public cho khách xem bill qua QR code)
     [HttpGet("{id}")]
     public async Task<ActionResult<InvoiceDto>> GetInvoiceById(string id)
     {
@@ -85,6 +101,7 @@ public class InvoicesController : ControllerBase
     }
 
     // Cập nhật trạng thái đơn hàng (preparing, ready, completed, cancelled)
+    [Authorize]
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(string id, [FromBody] UpdateOrderStatusRequest request)
     {

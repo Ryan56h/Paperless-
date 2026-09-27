@@ -16,6 +16,17 @@ export default function GroceryProductsPage() {
 
   const lastScanRef = useRef<{code: string, time: number}>({ code: '', time: 0 });
 
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem('paperless_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   // Fetch from backend
   useEffect(() => {
     if (business?.id) {
@@ -26,7 +37,9 @@ export default function GroceryProductsPage() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/product?tenantId=${business?.id}`);
+      const res = await fetch('/api/product', {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -168,7 +181,7 @@ export default function GroceryProductsPage() {
         // Cập nhật
         const res = await fetch(`/api/product/${editingProduct.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
         if (res.ok) {
@@ -179,7 +192,7 @@ export default function GroceryProductsPage() {
         // Thêm mới
         const res = await fetch('/api/product', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
         if (res.ok) {
@@ -197,7 +210,10 @@ export default function GroceryProductsPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
       try {
-        const res = await fetch(`/api/product/${id}?tenantId=${business?.id || 'BIZ-GROCERY-01'}`, { method: 'DELETE' });
+        const res = await fetch(`/api/product/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
           setProducts(products.filter(p => p.id !== id));
         }

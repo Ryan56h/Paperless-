@@ -83,7 +83,8 @@ public static class DbInitializer
                     Email = "minhphat.mart@gmail.com",
                     Phone = "0908123456",
                     PasswordHash = defaultPasswordHash,
-                    BusinessType = "grocery"
+                    BusinessType = "grocery",
+                    Role = "owner"
                 };
                 context.Users.Add(groceryOwner);
             }
@@ -171,7 +172,8 @@ public static class DbInitializer
                     Email = "moclan.coffee@gmail.com",
                     Phone = "0912888999",
                     PasswordHash = defaultPasswordHash,
-                    BusinessType = "cafe"
+                    BusinessType = "cafe",
+                    Role = "owner"
                 };
                 context.Users.Add(cafeOwner);
             }
@@ -337,6 +339,72 @@ public static class DbInitializer
             };
 
             context.Invoices.AddRange(sampleInvoice1, sampleInvoice2, sampleInvoice3);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed System Admin account if not exists
+        if (!await context.Users.AnyAsync(u => u.Email == "admin@paperless.vn"))
+        {
+            var adminUser = new User
+            {
+                Id = "user-system-admin",
+                TenantId = null,
+                FullName = "Quản Trị Hệ Thống",
+                Email = "admin@paperless.vn",
+                Phone = "0900000000",
+                PasswordHash = defaultPasswordHash,
+                BusinessType = "grocery",
+                Role = "admin"
+            };
+            context.Users.Add(adminUser);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Grocery Staff account if not exists
+        if (!await context.Users.AnyAsync(u => u.Email == "staff.minhphat@gmail.com"))
+        {
+            var staffUser = new User
+            {
+                Id = "user-grocery-staff-01",
+                TenantId = "BIZ-GROCERY-01",
+                BranchId = "branch-grocery-01",
+                FullName = "Thu Ngân Minh Phát",
+                Email = "staff.minhphat@gmail.com",
+                Phone = "0908999888",
+                PasswordHash = defaultPasswordHash,
+                BusinessType = "grocery",
+                Role = "staff"
+            };
+            context.Users.Add(staffUser);
+            await context.SaveChangesAsync();
+        }
+
+        // Ensure all existing database users have appropriate roles
+        var allUsers = await context.Users.ToListAsync();
+        bool hasRoleUpdates = false;
+        foreach (var u in allUsers)
+        {
+            if (string.IsNullOrEmpty(u.Role) || u.Role == "staff")
+            {
+                if (u.Email.ToLower().Contains("admin") || u.Id.ToLower().Contains("admin"))
+                {
+                    u.Role = "admin";
+                    hasRoleUpdates = true;
+                }
+                else if (u.Email.ToLower().Contains("staff") || u.Id.ToLower().Contains("staff"))
+                {
+                    u.Role = "staff";
+                }
+                else
+                {
+                    // Existing registered store accounts are owners
+                    u.Role = "owner";
+                    hasRoleUpdates = true;
+                }
+            }
+        }
+        if (hasRoleUpdates)
+        {
             await context.SaveChangesAsync();
         }
     }

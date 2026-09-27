@@ -6,9 +6,10 @@ import type { BusinessType } from '../../types';
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredBusinessType?: BusinessType;
+  allowedRoles?: string[];
 }
 
-export default function ProtectedRoute({ children, requiredBusinessType }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredBusinessType, allowedRoles }: ProtectedRouteProps) {
   const { isLoggedIn, isDemo, isLoading, business, user } = useAuth();
   const location = useLocation();
 
@@ -30,6 +31,12 @@ export default function ProtectedRoute({ children, requiredBusinessType }: Prote
 
   const currentType = (business?.type || user?.businessType) as BusinessType | undefined;
   if (requiredBusinessType && currentType && currentType !== requiredBusinessType) {
+    const target = currentType === 'cafe' ? '/app/cafe/order' : '/app/grocery/order';
+    return <Navigate to={target} replace />;
+  }
+
+  const currentRole = user?.role || (isDemo ? 'owner' : 'staff');
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(currentRole)) {
     const target = currentType === 'cafe' ? '/app/cafe/order' : '/app/grocery/order';
     return <Navigate to={target} replace />;
   }

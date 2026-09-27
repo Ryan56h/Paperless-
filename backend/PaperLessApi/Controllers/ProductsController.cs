@@ -8,6 +8,7 @@ using PaperLessApi.Services;
 
 namespace PaperLessApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
@@ -19,35 +20,54 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
-    private string GetTenantId()
+    private string? GetTenantId(string? requestedTenantId = null)
     {
-        var tenantId = User.FindFirstValue("tenant_id");
-        return !string.IsNullOrEmpty(tenantId) ? tenantId : "BIZ-GROCERY-01";
+        if (User.IsInRole("admin") && !string.IsNullOrWhiteSpace(requestedTenantId))
+        {
+            return requestedTenantId;
+        }
+        return User.FindFirstValue("tenant_id");
     }
 
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetProducts(
         [FromQuery] string? category,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var products = await _productService.GetProductsAsync(tenantId, category, search);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var products = await _productService.GetProductsAsync(tid, category, search);
         return Ok(products);
     }
 
     [HttpGet("categories")]
-    public async Task<ActionResult<List<string>>> GetCategories()
+    public async Task<ActionResult<List<string>>> GetCategories([FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var categories = await _productService.GetCategoriesAsync(tenantId);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var categories = await _productService.GetCategoriesAsync(tid);
         return Ok(categories);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ProductDto>> GetProduct(string id)
+    public async Task<ActionResult<ProductDto>> GetProduct(string id, [FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var product = await _productService.GetProductByIdAsync(tenantId, id);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var product = await _productService.GetProductByIdAsync(tid, id);
         if (product == null)
         {
             return NotFound(new { message = "Không tìm thấy sản phẩm." });
@@ -56,21 +76,31 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [Authorize]
+    [Authorize(Roles = "owner,admin")]
     [HttpPost]
-    public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] CreateProductRequest request)
+    public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] CreateProductRequest request, [FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var created = await _productService.CreateProductAsync(tenantId, request);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var created = await _productService.CreateProductAsync(tid, request);
         return CreatedAtAction(nameof(GetProduct), new { id = created.Id }, created);
     }
 
-    [Authorize]
+    [Authorize(Roles = "owner,admin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProduct(string id, [FromBody] UpdateProductRequest request)
+    public async Task<IActionResult> UpdateProduct(string id, [FromBody] UpdateProductRequest request, [FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var updated = await _productService.UpdateProductAsync(tenantId, id, request);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var updated = await _productService.UpdateProductAsync(tid, id, request);
         if (updated == null)
         {
             return NotFound(new { message = "Không tìm thấy sản phẩm." });
@@ -79,12 +109,17 @@ public class ProductsController : ControllerBase
         return Ok(updated);
     }
 
-    [Authorize]
+    [Authorize(Roles = "owner,admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(string id)
+    public async Task<IActionResult> DeleteProduct(string id, [FromQuery] string? tenantId)
     {
-        var tenantId = GetTenantId();
-        var success = await _productService.DeleteProductAsync(tenantId, id);
+        var tid = GetTenantId(tenantId);
+        if (string.IsNullOrEmpty(tid))
+        {
+            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng của bạn." });
+        }
+
+        var success = await _productService.DeleteProductAsync(tid, id);
         if (!success)
         {
             return NotFound(new { message = "Không tìm thấy sản phẩm." });
@@ -93,3 +128,4 @@ public class ProductsController : ControllerBase
         return Ok(new { message = "Sản phẩm đã được xóa." });
     }
 }
+
