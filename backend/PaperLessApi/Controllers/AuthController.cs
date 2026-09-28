@@ -70,8 +70,7 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            message = $"Mã xác thực OTP đã được gửi đến email {email}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác/Spam).",
-            otp = code
+            message = $"Mã xác thực OTP đã được gửi đến email {email}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác/Spam)."
         });
     }
 

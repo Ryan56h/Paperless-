@@ -70,7 +70,7 @@ export async function loginApi(
   return response.json();
 }
 
-export async function sendRegisterOtpApi(email: string, fullName?: string): Promise<{ message: string; otp?: string }> {
+export async function sendRegisterOtpApi(email: string, fullName?: string): Promise<{ message: string }> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}/auth/send-register-otp`, {
