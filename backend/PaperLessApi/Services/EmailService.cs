@@ -1,5 +1,8 @@
 using System;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -16,11 +19,13 @@ public interface IEmailService
 public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<EmailService> _logger;
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<EmailService> logger)
     {
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -80,6 +85,41 @@ public class EmailService : IEmailService
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
+        // 1. Prioritize Resend HTTP API if RESEND_API_KEY is configured (bypasses Render SMTP port blocking)
+        var resendApiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY") ?? _configuration["Resend:ApiKey"];
+        if (!string.IsNullOrWhiteSpace(resendApiKey))
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", resendApiKey.Trim());
+                httpClient.Timeout = TimeSpan.FromSeconds(5);
+
+                var senderFrom = Environment.GetEnvironmentVariable("RESEND_FROM") ?? "onboarding@resend.dev";
+                var payload = new
+                {
+                    from = $"PaperLess+ <{senderFrom}>",
+                    to = new[] { toEmail },
+                    subject = subject,
+                    html = htmlBody
+                };
+
+                var resendResponse = await httpClient.PostAsJsonAsync("https://api.resend.com/emails", payload);
+                if (resendResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ [EmailService] Đã gửi email thành công qua Resend HTTP API tới {ToEmail}", toEmail);
+                    return true;
+                }
+                var errContent = await resendResponse.Content.ReadAsStringAsync();
+                _logger.LogWarning("⚠️ [EmailService] Resend API trả về lỗi: {Error}", errContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [EmailService] Lỗi khi gọi Resend API tới {ToEmail}: {ErrorMessage}", toEmail, ex.Message);
+            }
+        }
+
+        // 2. Standard SMTP fallback with short 4-second timeout to prevent hanging on cloud hosts
         var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
         var portStr = _configuration["EmailSettings:Port"] ?? "587";
         var senderEmail = _configuration["EmailSettings:SenderEmail"] ?? "";
@@ -91,7 +131,7 @@ public class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(password))
         {
-            _logger.LogWarning(" [EmailService] SMTP chưa được cấu hình trong appsettings.json. Email gửi tới {ToEmail} với tiêu đề '{Subject}'.", toEmail, subject);
+            _logger.LogWarning("⚠️ [EmailService] SMTP chưa được cấu hình đầy đủ. Email gửi tới {ToEmail} với tiêu đề '{Subject}'.", toEmail, subject);
             return false;
         }
 
@@ -100,7 +140,8 @@ public class EmailService : IEmailService
             using var client = new SmtpClient(smtpServer, port)
             {
                 Credentials = new NetworkCredential(senderEmail, password),
-                EnableSsl = enableSsl
+                EnableSsl = enableSsl,
+                Timeout = 4000 // 4 seconds max to prevent hanging on cloud environments
             };
 
             using var message = new MailMessage
@@ -117,12 +158,12 @@ public class EmailService : IEmailService
             message.To.Add(toEmail);
             await client.SendMailAsync(message);
 
-            _logger.LogInformation("✅ [EmailService] Đã gửi email thành công tới {ToEmail}", toEmail);
+            _logger.LogInformation("✅ [EmailService] Đã gửi email thành công qua SMTP tới {ToEmail}", toEmail);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [EmailService] Lỗi khi gửi email tới {ToEmail}: {ErrorMessage}", toEmail, ex.Message);
+            _logger.LogError(ex, "❌ [EmailService] Lỗi khi gửi email SMTP tới {ToEmail}: {ErrorMessage}", toEmail, ex.Message);
             return false;
         }
     }

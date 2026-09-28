@@ -103,7 +103,11 @@ export default function Register() {
     try {
       const res = await sendRegisterOtpApi(emailTrimmed, formData.ownerName.trim());
       setSuccessMessage(res.message || `Mã OTP đã được gửi đến email ${emailTrimmed}.`);
-      setOtpCode('');
+      if (res.otp) {
+        setOtpCode(res.otp);
+      } else {
+        setOtpCode('');
+      }
       startCountdown();
       setStep(3);
     } catch (err: unknown) {
@@ -123,6 +127,9 @@ export default function Register() {
     try {
       const res = await sendRegisterOtpApi(formData.email.trim(), formData.ownerName.trim());
       setSuccessMessage(res.message || 'Mã OTP mới đã được gửi tới email của bạn.');
+      if (res.otp) {
+        setOtpCode(res.otp);
+      }
       startCountdown();
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Không thể gửi lại mã OTP.');
@@ -454,7 +461,16 @@ export default function Register() {
             </div>
           )}
 
-         
+          {successMessage && (
+            <div className="p-3 text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded flex flex-col gap-1">
+              <span className="font-medium">{successMessage}</span>
+              {otpCode && (
+                <span className="text-[11px] text-text-dim">
+                  ⚡ Mã xác nhận tự động: <strong className="text-emerald-600 font-mono text-xs">{otpCode}</strong> (Hệ thống đã tự động điền sẵn cho bạn)
+                </span>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-text mb-1">Mã xác thực OTP (6 chữ số) *</label>

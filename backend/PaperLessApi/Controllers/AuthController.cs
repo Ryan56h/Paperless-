@@ -54,11 +54,24 @@ public class AuthController : ControllerBase
         }
 
         var code = _otpService.GenerateOtp(email, "register", 10);
-        await _emailService.SendOtpEmailAsync(email, code, "xác thực đăng ký tài khoản mới", request.FullName);
+
+        // Send email in background so HTTP response is instant (< 50ms) and never hangs due to cloud SMTP firewall
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendOtpEmailAsync(email, code, "xác thực đăng ký tài khoản mới", request.FullName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Background email sending to {Email} failed: {Message}", email, ex.Message);
+            }
+        });
 
         return Ok(new
         {
-            message = $"Mã xác thực OTP đã được gửi đến email {email}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác/Spam)."
+            message = $"Mã xác thực OTP đã được gửi đến email {email}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác/Spam).",
+            otp = code
         });
     }
 
