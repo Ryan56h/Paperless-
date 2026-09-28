@@ -31,11 +31,7 @@ if (!string.IsNullOrEmpty(databaseUrl) && (databaseUrl.StartsWith("postgres://")
     var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
     var dbPort = uri.Port > 0 ? uri.Port : 5432;
     var database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
-    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Prefer;Trust Server Certificate=true;GssEncryptionMode=Disable;Timeout=15;Command Timeout=30";
-}
-else if (!string.IsNullOrEmpty(connectionString) && !connectionString.Contains("GssEncryptionMode", StringComparison.OrdinalIgnoreCase))
-{
-    connectionString += ";GssEncryptionMode=Disable";
+    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Prefer;Trust Server Certificate=true;Timeout=15;Command Timeout=30";
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
