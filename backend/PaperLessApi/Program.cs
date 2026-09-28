@@ -26,12 +26,12 @@ var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (!string.IsNullOrEmpty(databaseUrl) && (databaseUrl.StartsWith("postgres://") || databaseUrl.StartsWith("postgresql://")))
 {
     var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
-    var user = userInfo[0];
-    var password = userInfo.Length > 1 ? userInfo[1] : "";
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var user = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
     var dbPort = uri.Port > 0 ? uri.Port : 5432;
-    var database = uri.AbsolutePath.TrimStart('/');
-    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;GssEncryptionMode=Disable";
+    var database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+    connectionString = $"Host={uri.Host};Port={dbPort};Database={database};Username={user};Password={password};SSL Mode=Prefer;Trust Server Certificate=true;GssEncryptionMode=Disable;Timeout=15;Command Timeout=30";
 }
 else if (!string.IsNullOrEmpty(connectionString) && !connectionString.Contains("GssEncryptionMode", StringComparison.OrdinalIgnoreCase))
 {
@@ -122,6 +122,24 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        var ex = exceptionHandlerPathFeature?.Error;
+        var result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            message = ex?.Message ?? "Internal Server Error",
+            type = ex?.GetType().Name,
+            inner = ex?.InnerException?.Message
+        });
+        await context.Response.WriteAsync(result);
+    });
+});
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -135,6 +153,49 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/api/health", async (AppDbContext db) =>
+{
+    var hasDbUrl = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DATABASE_URL"));
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        var userCount = canConnect ? await db.Users.CountAsync() : -1;
+        var pendingMigrations = canConnect ? await db.Database.GetPendingMigrationsAsync() : Enumerable.Empty<string>();
+        return Results.Ok(new
+        {
+            status = "healthy",
+            database = canConnect ? "connected" : "disconnected",
+            hasDatabaseUrl = hasDbUrl,
+            userCount,
+            pendingMigrations,
+            serverTime = DateTime.UtcNow
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            status = "unhealthy",
+            hasDatabaseUrl = hasDbUrl,
+            error = ex.Message,
+            inner = ex.InnerException?.Message
+        }, statusCode: 500);
+    }
+});
+
+app.MapPost("/api/init-db", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await DbInitializer.SeedAsync(sp);
+        return Results.Ok(new { message = "Database seeded successfully!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace }, statusCode: 500);
+    }
+});
 
 try
 {
