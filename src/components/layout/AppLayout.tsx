@@ -51,12 +51,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { to: '/app/grocery/order', label: 'Bán hàng (POS)' },
     ...(userRole !== 'staff' ? [{ to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' }] : []),
     { to: '/app/grocery/products', label: 'Quản lý sản phẩm' },
+    ...(userRole !== 'staff' ? [{ to: '/app/staff', label: 'Quản lý nhân viên' }] : []),
   ];
 
   const cafeLinks = [
     { to: '/app/cafe/order', label: 'Sơ đồ bàn & Gọi món' },
     { to: '/app/cafe/display', label: 'Màn hình bếp (KDS)' },
     ...(userRole !== 'staff' ? [{ to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' }] : []),
+    ...(userRole !== 'staff' ? [{ to: '/app/staff', label: 'Quản lý nhân viên' }] : []),
   ];
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);

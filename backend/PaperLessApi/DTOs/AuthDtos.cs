@@ -181,3 +181,43 @@ public class ResetPasswordRequest
         return string.Empty;
     }
 }
+
+public class StaffDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Role { get; set; } = "staff";
+    public string BusinessType { get; set; } = "grocery";
+    public string? BranchId { get; set; }
+    public string? BranchName { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateStaffRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập họ và tên nhân viên.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Họ và tên nhân viên phải có từ 2 đến 100 ký tự.")]
+    public string FullName { get; set; } = string.Empty;
+
+    public string? Email { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng nhập số điện thoại nhân viên.")]
+    [RegularExpression(@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (10 chữ số, VD: 0912345678).")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu khởi tạo.")]
+    [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu khởi tạo phải từ 6 ký tự trở lên.")]
+    public string Password { get; set; } = string.Empty;
+
+    public string Role { get; set; } = "staff";
+}
+
+public class UpdateStaffPasswordRequest
+{
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+    [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu mới phải từ 6 ký tự trở lên.")]
+    public string NewPassword { get; set; } = string.Empty;
+}
+

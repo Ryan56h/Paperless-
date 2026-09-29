@@ -85,7 +85,44 @@ public class EmailService : IEmailService
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
-        // 1. Prioritize Resend HTTP API if RESEND_API_KEY is configured (bypasses Render SMTP port blocking)
+        var senderEmail = _configuration["EmailSettings:SenderEmail"] ?? "quockhanhknai2k5@gmail.com";
+        var senderName = _configuration["EmailSettings:SenderName"] ?? "PaperLess+";
+
+        // 1. Prioritize Brevo HTTP API if BREVO_API_KEY is configured (Sends to ANY email worldwide, 300 free/day, no sandbox restriction)
+        var brevoApiKey = Environment.GetEnvironmentVariable("BREVO_API_KEY") ?? _configuration["Brevo:ApiKey"];
+        if (!string.IsNullOrWhiteSpace(brevoApiKey))
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("api-key", brevoApiKey.Trim());
+                httpClient.Timeout = TimeSpan.FromSeconds(8);
+
+                var payload = new
+                {
+                    sender = new { name = senderName, email = senderEmail },
+                    to = new[] { new { email = toEmail } },
+                    subject = subject,
+                    htmlContent = htmlBody
+                };
+
+                var response = await httpClient.PostAsJsonAsync("https://api.brevo.com/v3/smtp/email", payload);
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ [EmailService] Đã gửi email thành công qua Brevo HTTP API tới {ToEmail}", toEmail);
+                    return true;
+                }
+                var err = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("⚠️ [EmailService] Brevo API trả về lỗi: {Error}", err);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [EmailService] Lỗi khi gọi Brevo API tới {ToEmail}: {ErrorMessage}", toEmail, ex.Message);
+            }
+        }
+
+        // 2. Resend HTTP API fallback
         var resendApiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY") ?? _configuration["Resend:ApiKey"];
         if (!string.IsNullOrWhiteSpace(resendApiKey))
         {
@@ -112,6 +149,30 @@ public class EmailService : IEmailService
                 }
                 var errContent = await resendResponse.Content.ReadAsStringAsync();
                 _logger.LogWarning("⚠️ [EmailService] Resend API trả về lỗi: {Error}", errContent);
+
+                // If Resend Sandbox only allows sending to the account owner (unverified custom domain):
+                // Automatically forward the OTP email to the registered account owner so they can receive it in their Gmail!
+                if (errContent.Contains("can only send testing emails", StringComparison.OrdinalIgnoreCase) ||
+                    errContent.Contains("validation_error", StringComparison.OrdinalIgnoreCase))
+                {
+                    var ownerEmail = Environment.GetEnvironmentVariable("RESEND_OWNER_EMAIL") ?? "dangbaoquockhanh3110@gmail.com";
+                    if (!string.Equals(toEmail, ownerEmail, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var fallbackPayload = new
+                        {
+                            from = $"PaperLess+ <{senderFrom}>",
+                            to = new[] { ownerEmail },
+                            subject = $"[Mã OTP cho {toEmail}] {subject}",
+                            html = $"<div style='background:#fef3c7;border:1px solid #f59e0b;padding:12px;border-radius:6px;margin-bottom:15px;color:#92400e;font-size:13px;'><strong>⚠️ Chế độ thử nghiệm Resend:</strong> Email đăng ký cho tài khoản <code>{toEmail}</code> được chuyển tiếp đến hòm thư của bạn vì tài khoản Resend đang ở chế độ thử nghiệm (Sandbox).</div>" + htmlBody
+                        };
+                        var fallbackResponse = await httpClient.PostAsJsonAsync("https://api.resend.com/emails", fallbackPayload);
+                        if (fallbackResponse.IsSuccessStatusCode)
+                        {
+                            _logger.LogInformation("✅ [EmailService] Đã chuyển tiếp email OTP sang hộp thư quản trị viên {OwnerEmail}", ownerEmail);
+                            return true;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -122,8 +183,6 @@ public class EmailService : IEmailService
         // 2. Standard SMTP fallback with short 4-second timeout to prevent hanging on cloud hosts
         var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
         var portStr = _configuration["EmailSettings:Port"] ?? "587";
-        var senderEmail = _configuration["EmailSettings:SenderEmail"] ?? "";
-        var senderName = _configuration["EmailSettings:SenderName"] ?? "PaperLess+";
         var password = _configuration["EmailSettings:Password"] ?? "";
         var enableSsl = bool.TryParse(_configuration["EmailSettings:EnableSsl"], out var ssl) ? ssl : true;
 

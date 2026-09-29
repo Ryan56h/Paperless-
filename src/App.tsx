@@ -16,6 +16,7 @@ import GroceryProductsPage from './pages/Grocery/ProductsPage';
 import CafeOrderPage from './pages/Cafe/OrderPage';
 import CafeDisplayPage from './pages/Cafe/DisplayPage';
 import CafeRevenuePage from './pages/Cafe/RevenuePage';
+import StaffManagementPage from './pages/StaffManagement';
 
 // Existing Legacy Pages (Preserved)
 import StaffOrder from './pages/StaffOrder';
@@ -138,6 +139,16 @@ export default function App() {
               element={
                 <ProtectedRoute requiredBusinessType="cafe" allowedRoles={['owner', 'admin']}>
                   <CafeRevenuePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Staff Management (Owner & Admin only) */}
+            <Route
+              path="/app/staff"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'admin']}>
+                  <StaffManagementPage />
                 </ProtectedRoute>
               }
             />

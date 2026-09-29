@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
-import { validateEmail, validatePassword } from '../../utils/validators';
+import { validateEmailOrPhone, validatePassword } from '../../utils/validators';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function Login() {
     e.preventDefault();
     setErrorMessage(null);
 
-    const emailErr = validateEmail(email);
+    const emailErr = validateEmailOrPhone(email);
     if (emailErr) {
       setErrorMessage(emailErr);
       return;
@@ -101,13 +101,13 @@ export default function Login() {
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-            Email tài khoản
+            Email hoặc Số điện thoại
           </label>
           <input
-            type="email"
+            type="text"
             required
             disabled={isSubmitting}
-            placeholder="cuahang@paperless.vn"
+            placeholder="0912345678 hoặc email@cuahang.vn"
             value={email}
             onChange={e => setEmail(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-600 focus:bg-white disabled:opacity-50"

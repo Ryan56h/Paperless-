@@ -456,11 +456,7 @@ export default function Register() {
             </div>
           )}
 
-          {successMessage && (
-            <div className="p-3 text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded">
-              {successMessage}
-            </div>
-          )}
+
 
           <div>
             <label className="block text-xs font-medium text-text mb-1">Mã xác thực OTP (6 chữ số) *</label>

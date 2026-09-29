@@ -36,6 +36,24 @@ export function validatePhone(phone: string): string | null {
   return null;
 }
 
+export function validateEmailOrPhone(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return 'Vui lòng nhập email hoặc số điện thoại.';
+  }
+  if (trimmed.includes('@')) {
+    return validateEmail(trimmed);
+  }
+  const cleanPhone = trimmed.replace(/[\s.-]/g, '');
+  if (/^\d{8,11}$/.test(cleanPhone)) {
+    return null;
+  }
+  if (trimmed.length < 3) {
+    return 'Tên đăng nhập / Số điện thoại không hợp lệ.';
+  }
+  return null;
+}
+
 export function validatePassword(password: string, fieldName: string = 'Mật khẩu'): string | null {
   if (!password) {
     return `Vui lòng nhập ${fieldName.toLowerCase()}.`;
