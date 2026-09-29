@@ -7,7 +7,7 @@ using PaperLessApi.Services;
 
 namespace PaperLessApi.Controllers;
 
-[Authorize(Roles = "owner,admin")]
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class RevenueController : ControllerBase

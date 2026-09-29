@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PaperLessApi.Data;
+using PaperLessApi.Hubs;
 using PaperLessApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +53,9 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IOtpService, OtpService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Real-time cart sync between devices
+builder.Services.AddSignalR();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(options =>
@@ -149,6 +153,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SignalR hub for real-time cart sync between phone & desktop
+app.MapHub<CartHub>("/hubs/cart");
 
 app.MapGet("/api/health", async (AppDbContext db) =>
 {
