@@ -193,6 +193,60 @@ app.MapMethods("/api/init-db", new[] { "GET", "POST" }, async (IServiceProvider 
     }
 });
 
+app.MapMethods("/api/fix-schema", new[] { "GET", "POST" }, async (AppDbContext db) =>
+{
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Barcode"" character varying(50);
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Popular"" boolean NOT NULL DEFAULT false;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Unit"" character varying(30) NOT NULL DEFAULT 'Cái';
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" character varying(500);
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Stock"" integer NOT NULL DEFAULT 100;
+
+            ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""CashGiven"" bigint NOT NULL DEFAULT 0;
+            ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""ChangeDue"" bigint NOT NULL DEFAULT 0;
+            ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""Note"" character varying(255);
+            ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""OrderStatus"" character varying(20) NOT NULL DEFAULT '';
+            ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""TicketNumber"" integer NOT NULL DEFAULT 0;
+
+            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Role"" character varying(50) NOT NULL DEFAULT 'owner';
+        ");
+        return Results.Ok(new { message = "Cập nhật cấu trúc database thành công!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message, inner = ex.InnerException?.Message }, statusCode: 500);
+    }
+});
+
+app.MapMethods("/api/clean-products", new[] { "GET", "POST" }, async (AppDbContext db) =>
+{
+    try
+    {
+        // 1. Ensure columns exist first
+        await db.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Barcode"" character varying(50);
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Popular"" boolean NOT NULL DEFAULT false;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Unit"" character varying(30) NOT NULL DEFAULT 'Cái';
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" character varying(500);
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Stock"" integer NOT NULL DEFAULT 100;
+        ");
+
+        // 2. Delete all products
+        var deletedCount = await db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""Products"";");
+        return Results.Ok(new
+        {
+            message = "Đã xóa toàn bộ sản phẩm trên máy chủ thành công!",
+            deletedCount
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message, inner = ex.InnerException?.Message }, statusCode: 500);
+    }
+});
+
 try
 {
     await DbInitializer.SeedAsync(app.Services);
