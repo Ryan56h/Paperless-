@@ -146,15 +146,16 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
+      const cleanPhone = formData.phone.trim().replace(/[\s.-]/g, '');
       const result = await register({
-        name: formData.name || (businessType === 'grocery' ? 'Cửa Hàng Tạp Hoá' : 'Quán Cafe'),
+        name: formData.name.trim() || (businessType === 'grocery' ? 'Cửa Hàng Tạp Hoá' : 'Quán Cafe'),
         type: businessType,
-        ownerName: formData.ownerName || 'Chủ Cửa Hàng',
-        phone: formData.phone || '0901 234 567',
-        email: formData.email.trim() || 'business@paperless.vn',
-        password: formData.password || '123456',
-        address: formData.address || 'Hồ Chí Minh',
-        taxCode: formData.taxCode || '0319888999',
+        ownerName: formData.ownerName.trim() || 'Chủ Cửa Hàng',
+        phone: cleanPhone,
+        email: formData.email.trim(),
+        password: formData.password,
+        address: formData.address.trim(),
+        taxCode: formData.taxCode.trim(),
         otpCode: otpCode.trim(),
       });
 

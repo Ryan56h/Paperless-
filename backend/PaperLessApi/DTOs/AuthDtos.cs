@@ -46,14 +46,24 @@ public class RegisterRequest
     public string? OwnerName { get; set; }
     public string? OwnerFullName { get; set; }
 
+    private string _email = string.Empty;
     [Required(ErrorMessage = "Vui lòng nhập địa chỉ email.")]
     [EmailAddress(ErrorMessage = "Địa chỉ email không đúng định dạng.")]
     [MaxLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự.")]
-    public string Email { get; set; } = string.Empty;
+    public string Email 
+    { 
+        get => _email; 
+        set => _email = value?.Trim().ToLower() ?? string.Empty; 
+    }
 
+    private string _phone = string.Empty;
     [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
     [RegularExpression(@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).")]
-    public string Phone { get; set; } = string.Empty;
+    public string Phone 
+    { 
+        get => _phone; 
+        set => _phone = value?.Trim().Replace(" ", "").Replace(".", "").Replace("-", "") ?? string.Empty; 
+    }
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
     [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu phải có độ dài từ 6 đến 50 ký tự.")]
