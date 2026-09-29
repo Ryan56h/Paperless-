@@ -17,6 +17,30 @@ public static class DbInitializer
 
         await context.Database.MigrateAsync();
 
+        // Ensure missing columns exist in PostgreSQL without failing
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Barcode"" character varying(50);
+                ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Popular"" boolean NOT NULL DEFAULT false;
+                ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Unit"" character varying(30) NOT NULL DEFAULT 'Cái';
+                ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" character varying(500);
+                ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Stock"" integer NOT NULL DEFAULT 100;
+
+                ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""CashGiven"" bigint NOT NULL DEFAULT 0;
+                ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""ChangeDue"" bigint NOT NULL DEFAULT 0;
+                ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""Note"" character varying(255);
+                ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""OrderStatus"" character varying(20) NOT NULL DEFAULT '';
+                ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""TicketNumber"" integer NOT NULL DEFAULT 0;
+
+                ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Role"" character varying(50) NOT NULL DEFAULT 'owner';
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Schema sync notice]: {ex.Message}");
+        }
+
         if (!await context.Plans.AnyAsync())
         {
             var freePlan = new Plan

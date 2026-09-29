@@ -180,7 +180,7 @@ app.MapGet("/api/health", async (AppDbContext db) =>
     }
 });
 
-app.MapPost("/api/init-db", async (IServiceProvider sp) =>
+app.MapMethods("/api/init-db", new[] { "GET", "POST" }, async (IServiceProvider sp) =>
 {
     try
     {
