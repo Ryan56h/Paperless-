@@ -203,9 +203,14 @@ public class CreateStaffRequest
 
     public string? Email { get; set; }
 
+    private string _phone = string.Empty;
     [Required(ErrorMessage = "Vui lòng nhập số điện thoại nhân viên.")]
-    [RegularExpression(@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (10 chữ số, VD: 0912345678).")]
-    public string Phone { get; set; } = string.Empty;
+    [RegularExpression(@"^[0-9+\s.-]{8,15}$", ErrorMessage = "Số điện thoại không hợp lệ (từ 8 đến 15 chữ số).")]
+    public string Phone
+    {
+        get => _phone;
+        set => _phone = value?.Trim().Replace(" ", "").Replace(".", "").Replace("-", "") ?? string.Empty;
+    }
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu khởi tạo.")]
     [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu khởi tạo phải từ 6 ký tự trở lên.")]

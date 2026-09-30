@@ -34,7 +34,7 @@ public class User
 
     [Required]
     [MaxLength(20)]
-    public string Role { get; set; } = "staff"; // "admin", "owner", "staff"
+    public string Role { get; set; } = "owner"; // "admin", "owner", "staff"
 
     public string? BranchId { get; set; }
     public Branch? Branch { get; set; }

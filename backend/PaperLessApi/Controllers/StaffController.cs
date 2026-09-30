@@ -12,7 +12,7 @@ using PaperLessApi.Models;
 
 namespace PaperLessApi.Controllers;
 
-[Authorize(Roles = "owner,admin")]
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class StaffController : ControllerBase
@@ -26,32 +26,84 @@ public class StaffController : ControllerBase
         _logger = logger;
     }
 
-    private string? GetTenantId(string? requestedTenantId = null)
-    {
-        if (User.IsInRole("admin") && !string.IsNullOrWhiteSpace(requestedTenantId))
-        {
-            return requestedTenantId;
-        }
-        return User.FindFirstValue("tenant_id");
-    }
-
     private string? GetCallerUserId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
     }
 
+    private async Task<(bool Allowed, string? TenantId, User? Caller, string? ErrorMessage)> ValidateCallerAsync(string? requestedTenantId = null)
+    {
+        var callerId = GetCallerUserId();
+        if (string.IsNullOrEmpty(callerId))
+        {
+            return (false, null, null, "Không xác định được danh tính người dùng (token không hợp lệ).");
+        }
+
+        var caller = await _context.Users.Include(u => u.Tenant).FirstOrDefaultAsync(u => u.Id == callerId);
+        if (caller == null)
+        {
+            return (false, null, null, "Tài khoản của bạn không tồn tại trong hệ thống.");
+        }
+
+        // Claim check
+        var roleClaim = User.FindFirstValue(ClaimTypes.Role) ?? User.FindFirstValue("role") ?? caller.Role;
+
+        // Check if admin
+        if (roleClaim.Equals("admin", StringComparison.OrdinalIgnoreCase) || caller.Role.Equals("admin", StringComparison.OrdinalIgnoreCase))
+        {
+            var adminTenantId = !string.IsNullOrWhiteSpace(requestedTenantId) ? requestedTenantId : caller.TenantId;
+            return (true, adminTenantId, caller, null);
+        }
+
+        // Check if owner: role is owner OR caller is store owner of the tenant
+        bool isStoreOwner = caller.Role.Equals("owner", StringComparison.OrdinalIgnoreCase)
+                            || roleClaim.Equals("owner", StringComparison.OrdinalIgnoreCase)
+                            || (caller.Tenant != null && (
+                                (!string.IsNullOrEmpty(caller.Tenant.Email) && caller.Tenant.Email.Equals(caller.Email, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(caller.Tenant.Phone) && caller.Tenant.Phone == caller.Phone) ||
+                                (!string.IsNullOrEmpty(caller.Tenant.OwnerName) && caller.Tenant.OwnerName.Equals(caller.FullName, StringComparison.OrdinalIgnoreCase))
+                            ));
+
+        if (!isStoreOwner)
+        {
+            return (false, null, caller, "Chỉ tài khoản Chủ cửa hàng (Owner) hoặc Quản trị viên (Admin) mới có quyền quản lý nhân viên.");
+        }
+
+        // Auto-heal role in DB if it was incorrectly marked as "staff"
+        if (!caller.Role.Equals("owner", StringComparison.OrdinalIgnoreCase))
+        {
+            caller.Role = "owner";
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Failed to auto-heal caller role: {Message}", ex.Message);
+            }
+        }
+
+        var tenantId = !string.IsNullOrWhiteSpace(caller.TenantId) ? caller.TenantId : requestedTenantId;
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            return (false, null, caller, "Tài khoản của bạn chưa được liên kết với cửa hàng nào.");
+        }
+
+        return (true, tenantId, caller, null);
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<StaffDto>>> GetStaffList([FromQuery] string? tenantId)
     {
-        var tid = GetTenantId(tenantId);
-        if (string.IsNullOrEmpty(tid))
+        var (allowed, tid, caller, errorMsg) = await ValidateCallerAsync(tenantId);
+        if (!allowed)
         {
-            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng." });
+            return StatusCode(403, new { message = errorMsg });
         }
 
         var staffList = await _context.Users
             .Include(u => u.Branch)
-            .Where(u => u.TenantId == tid && u.Role == "staff")
+            .Where(u => u.TenantId == tid && u.Role == "staff" && u.Id != caller!.Id)
             .OrderByDescending(u => u.CreatedAt)
             .Select(u => new StaffDto
             {
@@ -73,14 +125,11 @@ public class StaffController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<StaffDto>> CreateStaff([FromBody] CreateStaffRequest request, [FromQuery] string? tenantId)
     {
-        var tid = GetTenantId(tenantId);
-        if (string.IsNullOrEmpty(tid))
+        var (allowed, tid, caller, errorMsg) = await ValidateCallerAsync(tenantId);
+        if (!allowed)
         {
-            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng." });
+            return StatusCode(403, new { message = errorMsg });
         }
-
-        var callerId = GetCallerUserId();
-        var caller = await _context.Users.FirstOrDefaultAsync(u => u.Id == callerId);
 
         var branchId = caller?.BranchId;
         var businessType = caller?.BusinessType ?? "grocery";
@@ -96,7 +145,7 @@ public class StaffController : ControllerBase
         var phoneExists = await _context.Users.AnyAsync(u => u.Phone == cleanPhone);
         if (phoneExists)
         {
-            return BadRequest(new { message = "Số điện thoại này đã được sử dụng bởi một tài khoản khác trong hệ thống." });
+            return BadRequest(new { message = $"Số điện thoại '{cleanPhone}' đã được sử dụng bởi một tài khoản khác trong hệ thống." });
         }
 
         string email;
@@ -106,14 +155,18 @@ public class StaffController : ControllerBase
             var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email);
             if (emailExists)
             {
-                return BadRequest(new { message = "Email này đã được sử dụng bởi một tài khoản khác." });
+                return BadRequest(new { message = $"Email '{email}' đã được sử dụng bởi một tài khoản khác trong hệ thống." });
             }
         }
         else
         {
             // Auto generate standard format username email for staff
-            var safeTenantPrefix = tid.Replace("-", "").Substring(0, Math.Min(6, tid.Replace("-", "").Length));
+            var safeTenantPrefix = tid!.Replace("-", "").Substring(0, Math.Min(6, tid.Replace("-", "").Length));
             email = $"{cleanPhone}@{safeTenantPrefix}.paperless.vn";
+            if (await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower()))
+            {
+                email = $"{cleanPhone}_{Guid.NewGuid().ToString("N")[..4]}@{safeTenantPrefix}.paperless.vn";
+            }
         }
 
         var staff = new User
@@ -153,10 +206,10 @@ public class StaffController : ControllerBase
     [HttpPut("{id}/reset-password")]
     public async Task<IActionResult> ResetStaffPassword(string id, [FromBody] UpdateStaffPasswordRequest request, [FromQuery] string? tenantId)
     {
-        var tid = GetTenantId(tenantId);
-        if (string.IsNullOrEmpty(tid))
+        var (allowed, tid, _, errorMsg) = await ValidateCallerAsync(tenantId);
+        if (!allowed)
         {
-            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng." });
+            return StatusCode(403, new { message = errorMsg });
         }
 
         var staff = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == tid);
@@ -174,14 +227,13 @@ public class StaffController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteStaff(string id, [FromQuery] string? tenantId)
     {
-        var tid = GetTenantId(tenantId);
-        if (string.IsNullOrEmpty(tid))
+        var (allowed, tid, caller, errorMsg) = await ValidateCallerAsync(tenantId);
+        if (!allowed)
         {
-            return Unauthorized(new { message = "Không xác định được thông tin cửa hàng." });
+            return StatusCode(403, new { message = errorMsg });
         }
 
-        var callerId = GetCallerUserId();
-        if (callerId == id)
+        if (caller!.Id == id)
         {
             return BadRequest(new { message = "Bạn không thể xóa chính tài khoản chủ quán của mình." });
         }
