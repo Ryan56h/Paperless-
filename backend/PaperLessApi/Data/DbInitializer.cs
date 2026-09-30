@@ -34,6 +34,15 @@ public static class DbInitializer
                 ALTER TABLE ""Invoices"" ADD COLUMN IF NOT EXISTS ""TicketNumber"" integer NOT NULL DEFAULT 0;
 
                 ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Role"" character varying(50) NOT NULL DEFAULT 'owner';
+
+                -- Ensure all store owners have Role = 'owner'
+                UPDATE ""Users"" 
+                SET ""Role"" = 'owner' 
+                WHERE ""TenantId"" IS NOT NULL AND (""Role"" IS NULL OR ""Role"" = '' OR ""Role"" = 'staff') AND ""Id"" IN (
+                    SELECT u.""Id"" FROM ""Users"" u 
+                    INNER JOIN ""Tenants"" t ON u.""TenantId"" = t.""Id""
+                    WHERE t.""Email"" = u.""Email"" OR t.""Phone"" = u.""Phone"" OR t.""OwnerName"" = u.""FullName""
+                );
             ");
         }
         catch (Exception ex)
