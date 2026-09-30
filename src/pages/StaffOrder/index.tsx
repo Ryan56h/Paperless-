@@ -297,7 +297,7 @@ export default function StaffOrder() {
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-surface-2 border border-border rounded-2xl p-6 w-full max-w-sm text-center">
             <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mx-auto mb-4">
-              <span className="text-text text-lg font-bold">✓</span>
+              <span className="text-text text-lg font-bold"></span>
             </div>
             <h3 className="text-text font-bold text-base mb-2">Thanh toán thành công</h3>
             <p className="text-text-muted text-xs mb-6">Đã ghi nhận giao dịch & hoàn tất in hóa đơn giấy truyền thống.</p>
@@ -395,7 +395,7 @@ export default function StaffOrder() {
             ) : (
               <div className="py-8 flex flex-col items-center justify-center w-full">
                 <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mb-4">
-                  <span className="text-text text-xl font-bold">✓</span>
+                  <span className="text-text text-xl font-bold"></span>
                 </div>
                 <h3 className="text-text font-bold text-base mb-2">Thanh toán thành công!</h3>
                 <p className="text-text-muted text-xs">PayOS đã ghi nhận giao dịch thành công qua Webhook.</p>

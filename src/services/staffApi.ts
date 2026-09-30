@@ -50,6 +50,10 @@ export async function createStaffApi(payload: CreateStaffPayload): Promise<Staff
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 400 && data.errors) {
+      const validationErrors = Object.values(data.errors).flat().join(', ');
+      throw new Error(`Lỗi dữ liệu: ${validationErrors}`);
+    }
     throw new Error(data.message || 'Tạo tài khoản nhân viên thất bại.');
   }
   return data;
@@ -63,6 +67,10 @@ export async function resetStaffPasswordApi(id: string, newPassword: string): Pr
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 400 && data.errors) {
+      const validationErrors = Object.values(data.errors).flat().join(', ');
+      throw new Error(`Lỗi dữ liệu: ${validationErrors}`);
+    }
     throw new Error(data.message || 'Đặt lại mật khẩu thất bại.');
   }
   return data;

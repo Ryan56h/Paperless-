@@ -186,7 +186,7 @@ export default function GroceryDisplayPage() {
                     </div>
 
                     <div className="mt-2 text-[10px] text-text font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                      Chạm: Đã Xong ✓
+                      Chạm: Đã Xong
                     </div>
                   </div>
                 );
@@ -232,7 +232,7 @@ export default function GroceryDisplayPage() {
                     </div>
 
                     <div className="mt-2 text-[10px] text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                      Chạm: Đã Nhận Xong ✓
+                      Chạm: Đã Nhận Xong
                     </div>
                   </div>
                 );

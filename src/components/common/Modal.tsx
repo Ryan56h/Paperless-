@@ -56,7 +56,7 @@ export default function Modal({
               onClick={onClose}
               className="text-text-muted hover:text-text p-1 rounded-md hover:bg-surface transition-colors cursor-pointer text-sm"
             >
-              ✕
+              X
             </button>
           </div>
         )}

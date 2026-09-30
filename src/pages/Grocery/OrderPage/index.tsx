@@ -12,6 +12,7 @@ import {
   createCustomerApi,
   type BackendInvoice,
 } from '../../../services/groceryApi';
+import { useCartSync } from '../../../hooks/useCartSync';
 
 interface CartItem {
   id: string;
@@ -55,7 +56,21 @@ export default function GroceryOrderPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
 
+  // Close checkout modal if cart becomes empty (e.g. from sync)
+  useEffect(() => {
+    if (cart.length === 0 && showCheckoutModal) {
+      setShowCheckoutModal(false);
+    }
+  }, [cart.length, showCheckoutModal]);
+
   const lastScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
+
+  // Real-time cart sync between phone (barcode scanner) and desktop (POS)
+  const { isConnected: isSyncConnected } = useCartSync({
+    tenantId: business?.id,
+    cart,
+    setCart,
+  });
 
   // Camera Barcode Scanner
   useEffect(() => {
@@ -306,8 +321,10 @@ export default function GroceryOrderPage() {
 
       if (createReceipt) {
         navigate(`/invoice/${invoice.id}`);
+        clearCart();
       } else {
         setShowSuccessModal(true);
+        clearCart();
       }
     } catch (err: any) {
       alert(err.message || 'Không thể thanh toán đơn hàng.');
@@ -344,6 +361,14 @@ export default function GroceryOrderPage() {
               </h1>
               <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider truncate max-w-[150px] sm:max-w-none">
                 {business?.name || 'Tạp Hoá Minh Phát'}
+              </span>
+              {/* Real-time sync status */}
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                isSyncConnected 
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                  : 'bg-gray-50 text-gray-400 border border-gray-200'
+              }`}>
+                {isSyncConnected ? 'Sync ON' : 'Sync OFF'}
               </span>
             </div>
 

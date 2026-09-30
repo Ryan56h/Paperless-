@@ -132,7 +132,7 @@ export default function SendConfirmation() {
         <div className="px-8 py-6 flex flex-col md:flex-row items-center justify-center gap-8 min-h-[80vh] w-full max-w-4xl mx-auto">
           <div className="text-center max-w-sm flex-1">
             <div className="w-12 h-12 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4 text-text font-bold text-base">
-              ✓
+            
             </div>
             <h2 className="text-xl font-bold text-text mb-2">Gửi thành công!</h2>
             <p className="text-text-muted text-sm mb-1">Hóa đơn đã được gửi tới <span className="text-text font-medium">{successInfo.phone}</span></p>

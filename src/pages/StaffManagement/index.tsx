@@ -70,13 +70,19 @@ export default function StaffManagementPage() {
     e.preventDefault();
     setAddError(null);
 
-    if (!addForm.fullName.trim()) {
-      setAddError('Vui lòng nhập họ và tên nhân viên.');
+    if (!addForm.fullName.trim() || addForm.fullName.trim().length < 2) {
+      setAddError('Vui lòng nhập họ và tên nhân viên (tối thiểu 2 ký tự).');
       return;
     }
 
     if (!addForm.phone.trim()) {
       setAddError('Vui lòng nhập số điện thoại cho nhân viên.');
+      return;
+    }
+
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(addForm.phone.trim())) {
+      setAddError('Số điện thoại không hợp lệ (Phải đủ 10 số, bắt đầu bằng 03, 05, 07, 08 hoặc 09).');
       return;
     }
 
@@ -354,7 +360,7 @@ export default function StaffManagementPage() {
                 onClick={() => setIsAddModalOpen(false)}
                 className="text-text-dim hover:text-text p-1 cursor-pointer"
               >
-                ✕
+                X
               </button>
             </div>
 
@@ -463,7 +469,7 @@ export default function StaffManagementPage() {
                 onClick={() => setResetModalStaff(null)}
                 className="text-text-dim hover:text-text p-1 cursor-pointer"
               >
-                ✕
+                X
               </button>
             </div>
 

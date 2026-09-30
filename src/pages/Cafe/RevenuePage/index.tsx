@@ -86,58 +86,8 @@ export default function CafeRevenuePage() {
           </div>
         </div>
 
-        {/* Charts & Top Selling Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Hourly Revenue Chart (2 cols) */}
-          <div className="lg:col-span-2 p-4 rounded bg-surface border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-xs font-bold text-text uppercase tracking-wider">
-                  Doanh thu theo giờ
-                </h3>
-                <p className="text-[11px] text-text-dim">Khung giờ hoạt động trong ngày</p>
-              </div>
-            </div>
-
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={data.hourlyData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="2 2" stroke="#2A2A2A" vertical={false} />
-                  <XAxis dataKey="hour" stroke="#666666" fontSize={11} tickLine={false} />
-                  <YAxis
-                    stroke="#666666"
-                    fontSize={11}
-                    tickLine={false}
-                    tickFormatter={val => `${val / 1000}k`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#111111',
-                      borderColor: '#333333',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                    }}
-                    formatter={(val: unknown) => [
-                      `${Number(val).toLocaleString('vi-VN')} đ`,
-                      'Doanh thu',
-                    ]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#FFFFFF"
-                    strokeWidth={1.5}
-                    fillOpacity={0.1}
-                    fill="#FFFFFF"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
+        {/* Top Selling Grid */}
+        <div className="grid grid-cols-1 gap-4">
           {/* Top Drinks */}
           <div className="p-4 rounded bg-surface border border-border">
             <h3 className="text-xs font-bold text-text uppercase tracking-wider mb-1">

@@ -470,7 +470,7 @@ export default function CafeOrderPage() {
                               ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 font-semibold'
                               : 'bg-surface-2 text-text-muted border-border'
                           }`}>
-                            {allPaid ? '✓ Đã trả trước' : hasMultipleGuests ? `${tableOrders.filter(o => o.isPaid).length}/${tableOrders.length} đã trả` : 'Trả sau'}
+                            {allPaid ? 'Đã trả trước' : hasMultipleGuests ? `${tableOrders.filter(o => o.isPaid).length}/${tableOrders.length} đã trả` : 'Trả sau'}
                           </span>
                         )}
 
@@ -646,7 +646,7 @@ export default function CafeOrderPage() {
                     <span className="max-w-[110px] truncate">{order.guestLabel || `Khách ${idx + 1}`}</span>
                     {order.isPaid ? (
                       <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${isSelected ? 'bg-bg text-text' : 'bg-green-100 text-green-700'}`}>
-                        ✓ Đã trả
+                        Đã trả
                       </span>
                     ) : (
                       <span className={`text-[9px] px-1 py-0.2 rounded ${isSelected ? 'bg-bg/20 text-bg' : 'text-text-dim font-mono'}`}>

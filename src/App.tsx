@@ -103,7 +103,7 @@ export default function App() {
             <Route
               path="/app/grocery/revenue"
               element={
-                <ProtectedRoute requiredBusinessType="grocery" allowedRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredBusinessType="grocery">
                   <GroceryRevenuePage />
                 </ProtectedRoute>
               }
@@ -137,7 +137,7 @@ export default function App() {
             <Route
               path="/app/cafe/revenue"
               element={
-                <ProtectedRoute requiredBusinessType="cafe" allowedRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredBusinessType="cafe">
                   <CafeRevenuePage />
                 </ProtectedRoute>
               }

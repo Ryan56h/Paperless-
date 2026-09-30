@@ -153,7 +153,7 @@ export default function CafeDisplayPage() {
                         )}
                         {order.isPaid ? (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-green-500/10 text-green-700 dark:text-green-300 border border-green-500/30 font-semibold">
-                            ✓ Đã trả
+                            Đã trả
                           </span>
                         ) : (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-medium">
@@ -234,7 +234,7 @@ export default function CafeDisplayPage() {
                         )}
                         {order.isPaid ? (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-green-500/10 text-green-700 dark:text-green-300 border border-green-500/30 font-semibold">
-                            ✓ Đã trả
+                            Đã trả
                           </span>
                         ) : (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-medium">
@@ -315,7 +315,7 @@ export default function CafeDisplayPage() {
                         )}
                         {order.isPaid ? (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-green-500/10 text-green-700 dark:text-green-300 border border-green-500/30 font-semibold">
-                            ✓ Đã trả
+                            Đã trả
                           </span>
                         ) : (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-medium">

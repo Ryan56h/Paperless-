@@ -15,6 +15,11 @@ export default function GroceryProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const lastScanRef = useRef<{code: string, time: number}>({ code: '', time: 0 });
+  const productsRef = useRef<CatalogProduct[]>([]);
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem('paperless_token');
@@ -103,7 +108,19 @@ export default function GroceryProductsPage() {
           if (lastScanRef.current.code === decodedText && now - lastScanRef.current.time < 2000) return;
           lastScanRef.current = { code: decodedText, time: now };
 
-          // Thành công
+          // Kiểm tra xem mã vạch đã có chưa (trừ trường hợp đang sửa chính sản phẩm đó)
+          const isEditingSame = editingProduct?.barcode === decodedText;
+          if (!isEditingSame) {
+            const duplicate = productsRef.current.find(p => p.barcode === decodedText);
+            if (duplicate) {
+              alert(`Mã vạch ${decodedText} đã tồn tại cho sản phẩm "${duplicate.name}"!`);
+              scanner.clear().catch(e => console.log(e));
+              setIsScanning(false);
+              return; // Dừng lại, không set form hay fetch API
+            }
+          }
+
+          // Thành công và mã chưa bị trùng
           scanner.clear().catch(e => console.log(e));
           setIsScanning(false);
           setFormData(prev => ({ ...prev, barcode: decodedText }));
@@ -166,6 +183,17 @@ export default function GroceryProductsPage() {
       return;
     }
 
+    // Check for duplicate barcode
+    if (formData.barcode && formData.barcode.trim() !== '') {
+      const duplicate = products.find(
+        p => p.barcode === formData.barcode && p.id !== editingProduct?.id
+      );
+      if (duplicate) {
+        alert(`LỖI: Mã vạch ${formData.barcode} đã tồn tại cho sản phẩm "${duplicate.name}"! Vui lòng sử dụng mã vạch khác.`);
+        return;
+      }
+    }
+
     const payload = {
       tenantId: business?.id || 'BIZ-GROCERY-01',
       name: formData.name,
@@ -187,6 +215,18 @@ export default function GroceryProductsPage() {
         if (res.ok) {
           const updated = await res.json();
           setProducts(products.map(p => p.id === updated.id ? updated : p));
+          handleCloseModal();
+        } else {
+          if (res.status === 403) {
+            alert('Lỗi cập nhật: Bạn không có quyền (Role) để sửa sản phẩm! Vui lòng đăng nhập bằng tài khoản Quản lý/Owner.');
+          } else if (res.status === 400) {
+            const errData = await res.json().catch(() => ({}));
+            const validationErrors = errData.errors ? Object.values(errData.errors).flat().join(', ') : '';
+            alert(`Lỗi dữ liệu không hợp lệ: ${validationErrors || errData.title || 'Vui lòng kiểm tra lại'}`);
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            alert(`Lỗi cập nhật: ${errData.message || 'Vui lòng thử lại.'}`);
+          }
         }
       } else {
         // Thêm mới
@@ -198,12 +238,23 @@ export default function GroceryProductsPage() {
         if (res.ok) {
           const created = await res.json();
           setProducts([created, ...products]);
+          handleCloseModal();
+        } else {
+          if (res.status === 403) {
+            alert('Lỗi thêm mới: Bạn không có quyền (Role) để thêm sản phẩm! Vui lòng đăng nhập bằng tài khoản Quản lý/Owner.');
+          } else if (res.status === 400) {
+            const errData = await res.json().catch(() => ({}));
+            const validationErrors = errData.errors ? Object.values(errData.errors).flat().join(', ') : '';
+            alert(`Lỗi dữ liệu không hợp lệ: ${validationErrors || errData.title || 'Vui lòng kiểm tra lại'}`);
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            alert(`Lỗi thêm mới: ${errData.message || 'Vui lòng thử lại.'}`);
+          }
         }
       }
-      handleCloseModal();
     } catch (err) {
       console.error(err);
-      alert('Lỗi lưu sản phẩm');
+      alert('Lỗi kết nối khi lưu sản phẩm');
     }
   };
 
@@ -417,7 +468,7 @@ export default function GroceryProductsPage() {
                       onClick={() => setIsScanning(!isScanning)}
                       className="px-3 py-2 bg-surface-2 border border-border rounded-lg text-xs font-medium hover:text-text cursor-pointer whitespace-nowrap"
                     >
-                      {isScanning ? 'Hủy quét' : '📷 Quét mã'}
+                      {isScanning ? 'Hủy quét' : 'Quét mã'}
                     </button>
                   </div>
                 </div>

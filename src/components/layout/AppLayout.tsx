@@ -49,15 +49,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   const groceryLinks = [
     { to: '/app/grocery/order', label: 'Bán hàng (POS)' },
-    ...(userRole !== 'staff' ? [{ to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' }] : []),
-    { to: '/app/grocery/products', label: 'Quản lý sản phẩm' },
+    { to: '/app/grocery/revenue', label: 'Doanh thu hôm nay' },
+    ...(userRole !== 'staff' ? [{ to: '/app/grocery/products', label: 'Quản lý sản phẩm' }] : []),
     ...(userRole !== 'staff' ? [{ to: '/app/staff', label: 'Quản lý nhân viên' }] : []),
   ];
 
   const cafeLinks = [
     { to: '/app/cafe/order', label: 'Sơ đồ bàn & Gọi món' },
     { to: '/app/cafe/display', label: 'Màn hình bếp (KDS)' },
-    ...(userRole !== 'staff' ? [{ to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' }] : []),
+    { to: '/app/cafe/revenue', label: 'Doanh thu hôm nay' },
     ...(userRole !== 'staff' ? [{ to: '/app/staff', label: 'Quản lý nhân viên' }] : []),
   ];
 
@@ -200,12 +200,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <span className="px-1">{link.label}</span>
           </NavLink>
         ))}
-        <button 
-          onClick={toggleTheme}
-          className="flex flex-col items-center justify-center flex-1 h-full text-[10px] sm:text-xs font-medium text-text-muted transition-colors text-center"
-        >
-           <span className="px-1">Đổi Theme</span>
-        </button>
         <button 
           type="button"
           onClick={() => setShowLogoutConfirm(true)}

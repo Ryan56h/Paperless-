@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import AppLayout from '../../../components/layout/AppLayout';
 import {
   fetchTodayRevenueApi,
-  fetchShiftRevenueApi,
   fetchDailyRevenueApi,
   fetchWeeklyRevenueApi,
   fetchInvoicesApi,
   type TodayRevenueData,
-  type ShiftRevenueData,
   type DailyRevenueData,
   type WeeklyRevenueData,
   type BackendInvoice,
@@ -31,12 +29,7 @@ export default function GroceryRevenuePage() {
   const [revenueData, setRevenueData] = useState<TodayRevenueData | null>(null);
   const [recentInvoices, setRecentInvoices] = useState<BackendInvoice[]>([]);
 
-  // Shift
-  const [shiftData, setShiftData] = useState<ShiftRevenueData | null>(null);
-  const [selectedShiftDate, setSelectedShiftDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
-
+  // Shift removed
   // Daily
   const [dailyData, setDailyData] = useState<DailyRevenueData | null>(null);
 
@@ -60,9 +53,6 @@ export default function GroceryRevenuePage() {
             setRevenueData(rev);
             setRecentInvoices(invs);
           }
-        } else if (activeTab === 'shift') {
-          const data = await fetchShiftRevenueApi(selectedShiftDate);
-          if (isMounted) setShiftData(data);
         } else if (activeTab === 'daily') {
           const data = await fetchDailyRevenueApi();
           if (isMounted) setDailyData(data);
@@ -80,7 +70,7 @@ export default function GroceryRevenuePage() {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, selectedShiftDate, weekOffset]);
+  }, [activeTab, weekOffset]);
 
   const totalRev = revenueData?.totalRevenue ?? 0;
   const prevRev = revenueData?.previousDayRevenue ?? 0;
@@ -107,10 +97,9 @@ export default function GroceryRevenuePage() {
         {/* Tab Navigation */}
         <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
           {[
-            { id: 'today', label: '📊 Hôm nay (Theo giờ)' },
-            { id: 'shift', label: '⏱️ Theo ca làm việc' },
-            { id: 'daily', label: '📅 Theo ngày (7 ngày)' },
-            { id: 'weekly', label: '📈 Theo tuần' },
+            { id: 'today', label: 'Hôm nay (Theo giờ)' },
+            { id: 'daily', label: 'Theo ngày (7 ngày)' },
+            { id: 'weekly', label: 'Theo tuần' },
           ].map(t => (
             <button
               key={t.id}
@@ -189,58 +178,8 @@ export default function GroceryRevenuePage() {
                   </div>
                 </div>
 
-                {/* Charts & Top Selling Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {/* Hourly Revenue Chart (2 cols) */}
-                  <div className="lg:col-span-2 p-4 rounded bg-surface border border-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="text-xs font-bold text-text uppercase tracking-wider">
-                          Doanh thu theo giờ
-                        </h3>
-                        <p className="text-[11px] text-text-dim">Từ 06:00 đến 21:00 hôm nay</p>
-                      </div>
-                    </div>
-
-                    <div className="h-56 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                          data={revenueData?.hourlyData ?? []}
-                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="2 2" stroke="#2A2A2A" vertical={false} />
-                          <XAxis dataKey="hour" stroke="#666666" fontSize={11} tickLine={false} />
-                          <YAxis
-                            stroke="#666666"
-                            fontSize={11}
-                            tickLine={false}
-                            tickFormatter={val => `${val / 1000}k`}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#111111',
-                              borderColor: '#333333',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                            }}
-                            formatter={(val: unknown) => [
-                              `${Number(val).toLocaleString('vi-VN')} đ`,
-                              'Doanh thu',
-                            ]}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="revenue"
-                            stroke="#FFFFFF"
-                            strokeWidth={1.5}
-                            fillOpacity={0.1}
-                            fill="#FFFFFF"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
+                {/* Top Selling Grid */}
+                <div className="grid grid-cols-1 gap-4">
                   {/* Top Selling Products */}
                   <div className="p-4 rounded bg-surface border border-border">
                     <h3 className="text-xs font-bold text-text uppercase tracking-wider mb-1">
@@ -331,10 +270,10 @@ export default function GroceryRevenuePage() {
                               </td>
                               <td className="py-2.5 px-3 text-xs">
                                 <span className="px-2 py-0.5 rounded text-[10px] bg-surface-2 border border-border font-medium">
-                                  {order.sendChannel === 'zalo' && '📱 Zalo'}
-                                  {order.sendChannel === 'sms' && '💬 SMS'}
-                                  {order.sendChannel === 'both' && '📲 Zalo+SMS'}
-                                  {(order.sendChannel === 'none' || !order.sendChannel) && '💾 Lưu máy'}
+                                  {order.sendChannel === 'zalo' && 'Zalo'}
+                                  {order.sendChannel === 'sms' && 'SMS'}
+                                  {order.sendChannel === 'both' && 'Zalo+SMS'}
+                                  {(order.sendChannel === 'none' || !order.sendChannel) && 'Lưu máy'}
                                 </span>
                               </td>
                               <td className="py-2.5 px-3 text-text-dim uppercase text-[11px]">
@@ -351,92 +290,6 @@ export default function GroceryRevenuePage() {
                   </div>
                 </div>
               </>
-            )}
-
-            {/* TAB 2: SHIFT */}
-            {activeTab === 'shift' && shiftData && (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-3 bg-surface rounded border border-border">
-                  <div>
-                    <h3 className="text-xs font-bold text-text uppercase tracking-wider">
-                      Chọn ngày xem ca
-                    </h3>
-                    <p className="text-[11px] text-text-dim">
-                      Phân chia theo ca: Sáng (6h-12h), Chiều (12h-18h), Tối (18h-22h), Đêm (22h-6h)
-                    </p>
-                  </div>
-                  <input
-                    type="date"
-                    value={selectedShiftDate}
-                    onChange={e => setSelectedShiftDate(e.target.value)}
-                    className="px-3 py-1.5 rounded bg-surface-2 border border-border text-xs text-text focus:outline-none"
-                  />
-                </div>
-
-                {/* Shift KPI Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {shiftData.shifts.map(shift => (
-                    <div key={shift.shiftName} className="p-4 rounded bg-surface border border-border space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-sm text-text">{shift.shiftName}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-surface-2 border border-border rounded text-text-dim">
-                          {shift.timeRange}
-                        </span>
-                      </div>
-                      <div className="text-xl font-bold text-text">
-                        {shift.totalRevenue.toLocaleString('vi-VN')} đ
-                      </div>
-                      <p className="text-xs text-text-dim font-medium">
-                        {shift.orderCount} đơn hàng
-                      </p>
-                      <div className="pt-2 border-t border-border/50 text-[11px] space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-text-dim">Tiền mặt:</span>
-                          <span className="font-semibold text-text">{shift.cashRevenue.toLocaleString('vi-VN')} đ</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-text-dim">Chuyển khoản/QR:</span>
-                          <span className="font-semibold text-text">{shift.digitalRevenue.toLocaleString('vi-VN')} đ</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Shift Comparison Chart */}
-                <div className="p-4 rounded bg-surface border border-border">
-                  <h3 className="text-xs font-bold text-text uppercase tracking-wider mb-2">
-                    So sánh doanh thu giữa các ca trong ngày ({shiftData.date})
-                  </h3>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={shiftData.shifts} margin={{ top: 15, right: 15, left: -10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="2 2" stroke="#2A2A2A" vertical={false} />
-                        <XAxis dataKey="shiftName" stroke="#888888" fontSize={11} tickLine={false} />
-                        <YAxis
-                          stroke="#888888"
-                          fontSize={11}
-                          tickLine={false}
-                          tickFormatter={val => `${val / 1000}k`}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#111111',
-                            borderColor: '#333333',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                          }}
-                          formatter={(val: unknown) => [
-                            `${Number(val).toLocaleString('vi-VN')} đ`,
-                            'Doanh thu',
-                          ]}
-                        />
-                        <Bar dataKey="totalRevenue" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
             )}
 
             {/* TAB 3: DAILY */}
@@ -554,7 +407,7 @@ export default function GroceryRevenuePage() {
                     onClick={() => setWeekOffset(prev => prev - 1)}
                     className="px-3 py-1.5 rounded bg-surface-2 border border-border text-xs text-text hover:bg-border cursor-pointer font-medium"
                   >
-                    ◀ Tuần trước
+                    Tuần trước
                   </button>
                   <div className="text-center">
                     <span className="font-bold text-text text-sm block">{weeklyData.weekLabel}</span>
@@ -567,7 +420,7 @@ export default function GroceryRevenuePage() {
                     disabled={weekOffset === 0}
                     className="px-3 py-1.5 rounded bg-surface-2 border border-border text-xs text-text hover:bg-border cursor-pointer font-medium disabled:opacity-40"
                   >
-                    Tuần sau ▶
+                    Tuần sau
                   </button>
                 </div>
 
