@@ -66,31 +66,13 @@ public class ProductService : IProductService
     {
         var resolvedTenantId = !string.IsNullOrWhiteSpace(tenantId) ? tenantId : "BIZ-GROCERY-01";
 
-        // Check duplicate barcode - nếu barcode đã tồn tại thì trả về sản phẩm cũ
+        // Check duplicate barcode
         if (!string.IsNullOrWhiteSpace(request.Barcode))
         {
             var existing = await _productRepository.GetByBarcodeAsync(resolvedTenantId, request.Barcode.Trim());
             if (existing != null)
             {
-                // Nếu sản phẩm bị soft-delete, kích hoạt lại
-                if (!existing.IsAvailable)
-                {
-                    existing.IsAvailable = true;
-                    await _productRepository.SaveChangesAsync();
-                }
-                return new ProductDto
-                {
-                    Id = existing.Id,
-                    Name = existing.Name,
-                    Category = existing.Category,
-                    Price = existing.Price,
-                    Unit = existing.Unit,
-                    Barcode = existing.Barcode,
-                    Stock = existing.Stock,
-                    Popular = existing.Popular,
-                    ImageUrl = existing.ImageUrl,
-                    IsAvailable = existing.IsAvailable
-                };
+                throw new InvalidOperationException($"Mã vạch {request.Barcode} đã tồn tại cho sản phẩm '{existing.Name}'. Vui lòng sử dụng mã vạch khác.");
             }
         }
 
@@ -154,6 +136,15 @@ public class ProductService : IProductService
     {
         var product = await _productRepository.GetProductByIdAsync(tenantId, id);
         if (product == null) return null;
+
+        if (!string.IsNullOrWhiteSpace(request.Barcode))
+        {
+            var existing = await _productRepository.GetByBarcodeAsync(tenantId, request.Barcode.Trim());
+            if (existing != null && existing.Id != id)
+            {
+                throw new InvalidOperationException($"Mã vạch {request.Barcode} đã tồn tại cho sản phẩm '{existing.Name}'. Vui lòng sử dụng mã vạch khác.");
+            }
+        }
 
         product.Name = request.Name.Trim();
         product.Category = request.Category.Trim();
