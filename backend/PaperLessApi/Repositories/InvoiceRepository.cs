@@ -21,10 +21,14 @@ public class InvoiceRepository : GenericRepository<Invoice>, IInvoiceRepository
             .FirstOrDefaultAsync(i => i.Id == id);
     }
 
-    public async Task<Invoice?> GetLatestInvoiceAsync()
+    public async Task<Invoice?> GetLatestInvoiceAsync(string? tenantId = null)
     {
-        return await _dbSet
-            .Include(i => i.Items)
+        var query = _dbSet.Include(i => i.Items).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(tenantId))
+        {
+            query = query.Where(i => i.TenantId == tenantId);
+        }
+        return await query
             .OrderByDescending(i => i.CreatedAt)
             .FirstOrDefaultAsync();
     }

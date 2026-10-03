@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function NfcReceiver() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLatestInvoice = async () => {
       try {
-        const response = await fetch('/api/bill/latest');
+        const tenantId = searchParams.get('tenantId') || searchParams.get('storeId') || '';
+        const url = tenantId 
+          ? `/api/bill/latest?tenantId=${encodeURIComponent(tenantId)}`
+          : '/api/bill/latest';
+
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Không tìm thấy hóa đơn nào hoặc lỗi máy chủ.');
         }
@@ -26,7 +32,7 @@ export default function NfcReceiver() {
     };
 
     fetchLatestInvoice();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">

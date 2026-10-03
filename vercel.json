@@ -5,6 +5,10 @@
       "destination": "https://paperless-api-ew8j.onrender.com/api/:path*"
     },
     {
+      "source": "/hubs/:path*",
+      "destination": "https://paperless-api-ew8j.onrender.com/hubs/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageLayout from '../../components/layout/PageLayout';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
-import { mockCustomers, mockVouchers } from '../../data/mockData';
+import { mockVouchers } from '../../data/mockData';
+import { fetchCustomersApi, type CustomerListItem } from '../../services/groceryApi';
 import type { Voucher } from '../../types';
 
 function tierBadge(tier: string) {
-  if (tier === 'diamond') return <Badge variant="blue">Kim Cương</Badge>;
-  if (tier === 'gold') return <Badge variant="yellow">Vàng</Badge>;
-  if (tier === 'silver') return <Badge variant="gray">Bạc</Badge>;
+  const t = (tier || '').toLowerCase();
+  if (t === 'diamond') return <Badge variant="blue">Kim Cương</Badge>;
+  if (t === 'gold') return <Badge variant="yellow">Vàng</Badge>;
+  if (t === 'silver') return <Badge variant="gray">Bạc</Badge>;
   return <Badge variant="gray">Đồng</Badge>;
 }
 
@@ -95,6 +97,28 @@ function VoucherModal({ onClose }: VoucherModalProps) {
 export default function LoyaltyVoucher() {
   const [tab, setTab] = useState<'loyalty' | 'voucher'>('loyalty');
   const [showModal, setShowModal] = useState(false);
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadCustomers() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchCustomersApi(100);
+        setCustomers(data);
+      } catch (err: any) {
+        setError(err.message || 'Không thể tải danh sách khách hàng');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadCustomers();
+  }, []);
+
+  const totalPoints = customers.reduce((s, c) => s + c.points, 0);
+  const diamondCount = customers.filter(c => (c.tier || '').toLowerCase() === 'diamond').length;
 
   return (
     <PageLayout role="manager">
@@ -115,7 +139,7 @@ export default function LoyaltyVoucher() {
             onClick={() => setTab('loyalty')}
             className={`px-5 py-3 text-xs font-semibold border-b-2 cursor-pointer bg-transparent ${tab === 'loyalty' ? 'border-text text-text' : 'border-transparent text-text-dim hover:text-text'}`}
           >
-            Loyalty
+            Loyalty ({customers.length})
           </button>
           <button
             onClick={() => setTab('voucher')}
@@ -132,16 +156,16 @@ export default function LoyaltyVoucher() {
             <div className="grid grid-cols-4 gap-4 mb-6">
               <div className="bg-surface-2 border border-border rounded-xl p-4">
                 <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Tổng khách hàng</p>
-                <p className="text-2xl font-bold text-text">{mockCustomers.length}</p>
+                <p className="text-2xl font-bold text-text">{customers.length}</p>
               </div>
               <div className="bg-surface-2 border border-border rounded-xl p-4">
                 <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Kim Cương</p>
-                <p className="text-2xl font-bold text-text">{mockCustomers.filter(c => c.tier === 'diamond').length}</p>
+                <p className="text-2xl font-bold text-text">{diamondCount}</p>
               </div>
               <div className="bg-surface-2 border border-border rounded-xl p-4">
                 <p className="text-text-dim text-xs uppercase tracking-wider mb-1">Tổng điểm tích luỹ</p>
                 <p className="text-2xl font-bold text-text">
-                  {mockCustomers.reduce((s, c) => s + c.points, 0).toLocaleString()}
+                  {totalPoints.toLocaleString('vi-VN')}
                 </p>
               </div>
               <div className="bg-surface-2 border border-border rounded-xl p-4">
@@ -151,39 +175,52 @@ export default function LoyaltyVoucher() {
             </div>
 
             <Card title="Danh sách khách hàng thân thiết">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-dim uppercase tracking-wider">Khách hàng</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-dim uppercase tracking-wider">SĐT</th>
-                      <th className="px-4 py-3 text-center text-[11px] font-semibold text-text-dim uppercase tracking-wider">Hạng</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Điểm</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Tổng chi tiêu</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Số đơn</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {mockCustomers.sort((a, b) => b.points - a.points).map(c => (
-                      <tr key={c.id} className="hover:bg-surface-2">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center text-text text-[11px] font-bold shrink-0">
-                              {c.name.charAt(0)}
-                            </div>
-                            <span className="text-text font-medium text-sm">{c.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-text-muted text-sm">{c.phone}</td>
-                        <td className="px-4 py-3 text-center">{tierBadge(c.tier)}</td>
-                        <td className="px-4 py-3 text-right text-text font-semibold">{c.points.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right text-text">{c.totalSpent.toLocaleString('vi-VN')}đ</td>
-                        <td className="px-4 py-3 text-right text-text-muted">{c.totalOrders}</td>
+              {isLoading ? (
+                <div className="p-8 text-center text-text-muted">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-2"></div>
+                  Đang tải dữ liệu khách hàng...
+                </div>
+              ) : error ? (
+                <div className="p-6 text-center text-error text-sm">{error}</div>
+              ) : customers.length === 0 ? (
+                <div className="p-8 text-center text-text-muted text-sm">
+                  Chưa có khách hàng nào được ghi nhận. Khách hàng sẽ tự động được thêm vào khi bán hàng qua POS.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-dim uppercase tracking-wider">Khách hàng</th>
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-dim uppercase tracking-wider">SĐT</th>
+                        <th className="px-4 py-3 text-center text-[11px] font-semibold text-text-dim uppercase tracking-wider">Hạng</th>
+                        <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Điểm</th>
+                        <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Tổng chi tiêu</th>
+                        <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-dim uppercase tracking-wider">Số đơn</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {customers.slice().sort((a, b) => b.points - a.points).map(c => (
+                        <tr key={c.id} className="hover:bg-surface-2">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center text-text text-[11px] font-bold shrink-0">
+                                {(c.name || 'K').charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-text font-medium text-sm">{c.name || 'Khách vãng lai'}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-text-muted text-sm">{c.phone}</td>
+                          <td className="px-4 py-3 text-center">{tierBadge(c.tier)}</td>
+                          <td className="px-4 py-3 text-right text-text font-semibold">{c.points.toLocaleString('vi-VN')}</td>
+                          <td className="px-4 py-3 text-right text-text">{(c.totalSpent || 0).toLocaleString('vi-VN')}đ</td>
+                          <td className="px-4 py-3 text-right text-text-muted">{c.totalOrders || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
           </>
         )}

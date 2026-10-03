@@ -11,23 +11,47 @@ namespace PaperLessApi.Services;
 public class RevenueService : IRevenueService
 {
     private readonly IInvoiceRepository _invoiceRepository;
+    private static readonly TimeSpan VnOffset = TimeSpan.FromHours(7);
 
     public RevenueService(IInvoiceRepository invoiceRepository)
     {
         _invoiceRepository = invoiceRepository;
     }
 
+    /// <summary>
+    /// Chuyển đổi thời gian từ UTC sang múi giờ Việt Nam (UTC+7)
+    /// </summary>
+    private static DateTime ToVnTime(DateTime utc)
+    {
+        return utc.Kind == DateTimeKind.Utc
+            ? utc.Add(VnOffset)
+            : DateTime.SpecifyKind(utc, DateTimeKind.Utc).Add(VnOffset);
+    }
+
+    /// <summary>
+    /// Lấy ngày hôm nay theo múi giờ Việt Nam
+    /// </summary>
+    private static DateTime GetVnToday()
+    {
+        return DateTime.UtcNow.Add(VnOffset).Date;
+    }
+
     public async Task<TodayRevenueDto> GetGroceryTodayRevenueAsync(string tenantId)
     {
-        var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
-        var yesterday = today.AddDays(-1);
+        var vnToday = GetVnToday();
+        var vnTomorrow = vnToday.AddDays(1);
+        var vnYesterday = vnToday.AddDays(-1);
 
-        // Hóa đơn hôm nay qua InvoiceRepository
-        var todayInvoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, today, tomorrow);
+        // Quy đổi dải ngày VN sang UTC để truy vấn DB chính xác
+        var startUtc = vnToday.Add(-VnOffset);
+        var endUtc = vnTomorrow.Add(-VnOffset);
+        var yesterdayStartUtc = vnYesterday.Add(-VnOffset);
 
-        // Doanh thu hôm qua qua InvoiceRepository
-        var yesterdayRevenue = await _invoiceRepository.GetRevenueInDateRangeAsync(tenantId, yesterday, today);
+        // Hóa đơn hôm nay theo giờ VN
+        var todayInvoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, startUtc, endUtc);
+
+        // Doanh thu hôm qua theo giờ VN
+        var yesterdayRevenue = await _invoiceRepository.GetRevenueInDateRangeAsync(tenantId, yesterdayStartUtc, startUtc);
 
         var totalRevenue = todayInvoices.Sum(i => i.Total);
         var orderCount = todayInvoices.Count;
@@ -41,12 +65,12 @@ public class RevenueService : IRevenueService
             .Where(i => i.PayMethod.ToLower() != "cash")
             .Sum(i => i.Total);
 
-        // Biểu đồ theo giờ từ 06:00 đến 22:00
+        // Biểu đồ theo giờ từ 06:00 đến 21:00 (chuẩn giờ VN)
         var hourlyData = new List<HourlyRevenueDto>();
         for (int h = 6; h <= 21; h++)
         {
             var hourStr = $"{h:D2}:00";
-            var inHour = todayInvoices.Where(i => i.CreatedAt.Hour == h).ToList();
+            var inHour = todayInvoices.Where(i => ToVnTime(i.CreatedAt).Hour == h).ToList();
             hourlyData.Add(new HourlyRevenueDto
             {
                 Hour = hourStr,
@@ -85,9 +109,13 @@ public class RevenueService : IRevenueService
 
     public async Task<ShiftRevenueResponseDto> GetShiftRevenueAsync(string tenantId, DateTime? date)
     {
-        var targetDate = (date ?? DateTime.UtcNow).Date;
-        var nextDay = targetDate.AddDays(1);
-        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, targetDate, nextDay);
+        var vnTargetDate = (date != null ? date.Value.Date : GetVnToday());
+        var vnNextDay = vnTargetDate.AddDays(1);
+
+        var startUtc = vnTargetDate.Add(-VnOffset);
+        var endUtc = vnNextDay.Add(-VnOffset);
+
+        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, startUtc, endUtc);
 
         var shiftDefinitions = new[]
         {
@@ -104,11 +132,19 @@ public class RevenueService : IRevenueService
             List<Invoice> shiftInvs;
             if (def.Start < def.End)
             {
-                shiftInvs = invoices.Where(i => i.CreatedAt.Hour >= def.Start && i.CreatedAt.Hour < def.End).ToList();
+                shiftInvs = invoices.Where(i =>
+                {
+                    var hour = ToVnTime(i.CreatedAt).Hour;
+                    return hour >= def.Start && hour < def.End;
+                }).ToList();
             }
             else
             {
-                shiftInvs = invoices.Where(i => i.CreatedAt.Hour >= def.Start || i.CreatedAt.Hour < def.End).ToList();
+                shiftInvs = invoices.Where(i =>
+                {
+                    var hour = ToVnTime(i.CreatedAt).Hour;
+                    return hour >= def.Start || hour < def.End;
+                }).ToList();
             }
 
             shifts.Add(new ShiftRevenueDto
@@ -124,7 +160,7 @@ public class RevenueService : IRevenueService
 
         return new ShiftRevenueResponseDto
         {
-            Date = targetDate.ToString("yyyy-MM-dd"),
+            Date = vnTargetDate.ToString("yyyy-MM-dd"),
             TotalRevenue = invoices.Sum(i => i.Total),
             TotalOrders = invoices.Count,
             Shifts = shifts
@@ -133,20 +169,23 @@ public class RevenueService : IRevenueService
 
     public async Task<DailyRevenueResponseDto> GetDailyRevenueAsync(string tenantId, DateTime? from, DateTime? to)
     {
-        var toDate = (to ?? DateTime.UtcNow).Date.AddDays(1);
-        var fromDate = (from ?? toDate.AddDays(-7)).Date;
+        var vnToDate = (to != null ? to.Value.Date : GetVnToday()).AddDays(1);
+        var vnFromDate = (from != null ? from.Value.Date : vnToDate.AddDays(-7));
 
-        if (fromDate >= toDate)
+        if (vnFromDate >= vnToDate)
         {
-            fromDate = toDate.AddDays(-7);
+            vnFromDate = vnToDate.AddDays(-7);
         }
 
-        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, fromDate, toDate);
+        var startUtc = vnFromDate.Add(-VnOffset);
+        var endUtc = vnToDate.Add(-VnOffset);
+
+        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, startUtc, endUtc);
 
         var days = new List<DailyRevenueItemDto>();
-        for (var d = fromDate; d < toDate; d = d.AddDays(1))
+        for (var d = vnFromDate; d < vnToDate; d = d.AddDays(1))
         {
-            var dayInvs = invoices.Where(i => i.CreatedAt.Date == d).ToList();
+            var dayInvs = invoices.Where(i => ToVnTime(i.CreatedAt).Date == d).ToList();
             var dayTotal = dayInvs.Sum(i => i.Total);
 
             days.Add(new DailyRevenueItemDto
@@ -162,12 +201,12 @@ public class RevenueService : IRevenueService
 
         var totalRev = invoices.Sum(i => i.Total);
         var totalOrders = invoices.Count;
-        var dayCount = Math.Max(1, (toDate - fromDate).Days);
+        var dayCount = Math.Max(1, (vnToDate - vnFromDate).Days);
 
         return new DailyRevenueResponseDto
         {
-            From = fromDate.ToString("yyyy-MM-dd"),
-            To = toDate.AddDays(-1).ToString("yyyy-MM-dd"),
+            From = vnFromDate.ToString("yyyy-MM-dd"),
+            To = vnToDate.AddDays(-1).ToString("yyyy-MM-dd"),
             TotalRevenue = totalRev,
             TotalOrders = totalOrders,
             AverageDailyRevenue = totalRev / dayCount,
@@ -177,17 +216,20 @@ public class RevenueService : IRevenueService
 
     public async Task<WeeklyRevenueResponseDto> GetWeeklyRevenueAsync(string tenantId, int weekOffset)
     {
-        var now = DateTime.UtcNow.Date;
-        int diff = (7 + (int)now.DayOfWeek - (int)DayOfWeek.Monday) % 7;
-        var monday = now.AddDays(-1 * diff).AddDays(weekOffset * 7);
+        var vnNow = GetVnToday();
+        int diff = (7 + (int)vnNow.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+        var monday = vnNow.AddDays(-1 * diff).AddDays(weekOffset * 7);
         var sunday = monday.AddDays(7);
 
-        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, monday, sunday);
+        var startUtc = monday.Add(-VnOffset);
+        var endUtc = sunday.Add(-VnOffset);
+
+        var invoices = await _invoiceRepository.GetInvoicesInDateRangeAsync(tenantId, startUtc, endUtc);
 
         var days = new List<DailyRevenueItemDto>();
         for (var d = monday; d < sunday; d = d.AddDays(1))
         {
-            var dayInvs = invoices.Where(i => i.CreatedAt.Date == d).ToList();
+            var dayInvs = invoices.Where(i => ToVnTime(i.CreatedAt).Date == d).ToList();
             days.Add(new DailyRevenueItemDto
             {
                 Date = d.ToString("yyyy-MM-dd"),

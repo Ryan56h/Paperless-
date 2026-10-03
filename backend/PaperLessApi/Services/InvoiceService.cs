@@ -37,9 +37,9 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.GetInvoiceByIdAsync(id);
     }
 
-    public async Task<Invoice?> GetLatestInvoiceAsync()
+    public async Task<Invoice?> GetLatestInvoiceAsync(string? tenantId = null)
     {
-        return await _invoiceRepository.GetLatestInvoiceAsync();
+        return await _invoiceRepository.GetLatestInvoiceAsync(tenantId);
     }
 
     public async Task<(bool Success, string Message, Invoice? Invoice)> CreateInvoiceAsync(Invoice invoice)

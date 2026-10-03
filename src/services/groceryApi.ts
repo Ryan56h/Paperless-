@@ -343,3 +343,26 @@ export async function createCustomerApi(payload: { name: string; phone: string }
   }
   return res.json();
 }
+
+// 14. Fetch customer list
+export interface CustomerListItem {
+  id: string;
+  name: string;
+  phone: string;
+  points: number;
+  totalSpent: number;
+  totalOrders: number;
+  tier: string;
+  lastVisitAt?: string;
+}
+
+export async function fetchCustomersApi(limit = 100): Promise<CustomerListItem[]> {
+  const res = await fetch(`${API_URL}/customers?limit=${limit}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    throw new Error('Không thể tải danh sách khách hàng.');
+  }
+  return res.json();
+}
+

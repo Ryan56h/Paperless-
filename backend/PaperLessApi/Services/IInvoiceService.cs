@@ -9,7 +9,7 @@ public interface IInvoiceService
 {
     // Methods used by BillController
     Task<Invoice?> GetInvoiceAsync(string id);
-    Task<Invoice?> GetLatestInvoiceAsync();
+    Task<Invoice?> GetLatestInvoiceAsync(string? tenantId = null);
     Task<(bool Success, string Message, Invoice? Invoice)> CreateInvoiceAsync(Invoice invoice);
 
     // Grocery POS methods used by InvoicesController

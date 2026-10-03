@@ -92,7 +92,7 @@ public class CreateInvoiceRequest
 {
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }
-    public string PayMethod { get; set; } = "cash"; // cash, qr, transfer
+    public string PayMethod { get; set; } = "cash";
     public long CashGiven { get; set; }
     public string? Note { get; set; }
     public string SendChannel { get; set; } = "zalo";
@@ -141,7 +141,7 @@ public class InvoiceDto
 public class UpdateOrderStatusRequest
 {
     [Required]
-    public string Status { get; set; } = "preparing"; // preparing, ready, completed, cancelled
+    public string Status { get; set; } = "preparing";
 }
 
 // --- REVENUE DTOS ---

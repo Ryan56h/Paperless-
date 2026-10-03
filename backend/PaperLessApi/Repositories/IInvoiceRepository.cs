@@ -8,7 +8,7 @@ namespace PaperLessApi.Repositories;
 public interface IInvoiceRepository : IGenericRepository<Invoice>
 {
     Task<Invoice?> GetInvoiceByIdAsync(string id);
-    Task<Invoice?> GetLatestInvoiceAsync();
+    Task<Invoice?> GetLatestInvoiceAsync(string? tenantId = null);
     Task<bool> ExistsAsync(string id);
     Task<Invoice> AddInvoiceAsync(Invoice invoice);
     Task<int> GetMaxTicketTodayAsync(string tenantId, DateTime today);

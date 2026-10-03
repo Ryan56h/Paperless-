@@ -16,9 +16,9 @@ public class BillController : ControllerBase
     }
 
     [HttpGet("latest")]
-    public async Task<ActionResult<Invoice>> GetLatestInvoice()
+    public async Task<ActionResult<Invoice>> GetLatestInvoice([FromQuery] string? tenantId)
     {
-        var invoice = await _invoiceService.GetLatestInvoiceAsync();
+        var invoice = await _invoiceService.GetLatestInvoiceAsync(tenantId);
 
         if (invoice == null)
         {
