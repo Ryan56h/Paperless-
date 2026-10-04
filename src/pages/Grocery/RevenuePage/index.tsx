@@ -11,8 +11,6 @@ import {
   type BackendInvoice,
 } from '../../../services/groceryApi';
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,

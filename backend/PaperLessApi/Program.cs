@@ -1,3 +1,4 @@
+// PaperLessApi Entry Point
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

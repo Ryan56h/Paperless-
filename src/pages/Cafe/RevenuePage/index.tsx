@@ -1,14 +1,6 @@
 import AppLayout from '../../../components/layout/AppLayout';
 import { mockCafeRevenueOverview, mockCafeOrders } from '../../../data/mockData';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
+
 
 export default function CafeRevenuePage() {
   const data = mockCafeRevenueOverview;

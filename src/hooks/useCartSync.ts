@@ -31,7 +31,7 @@ export function useCartSync({ tenantId, cart, setCart }: UseCartSyncOptions) {
   const isRemoteUpdateRef = useRef(false);
   const lastSyncedCartRef = useRef<string>('');
   const [isConnected, setIsConnected] = useState(false);
-  const [syncDevices, setSyncDevices] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
 
   // Build the hub URL based on current environment
   const getHubUrl = useCallback(() => {
@@ -109,39 +109,50 @@ export function useCartSync({ tenantId, cart, setCart }: UseCartSyncOptions) {
     });
 
     connection.on('JoinedCartSession', (_tenantId: string) => {
-      console.log('[CartSync] Joined session for tenant:', _tenantId);
+      console.log('[SignalR Cart] ✅ Đã kết nối và tham gia phòng đồng bộ cho cửa hàng:', _tenantId);
     });
 
     connection.onreconnected(() => {
       setIsConnected(true);
+      setConnectionStatus('connected');
+      console.log('[SignalR Cart] 🔄 Đã kết nối lại thành công');
       // Rejoin group after reconnect
       connection.invoke('JoinCartSession', tenantId).catch(console.warn);
     });
 
     connection.onreconnecting(() => {
       setIsConnected(false);
+      setConnectionStatus('connecting');
+      console.log('[SignalR Cart] ⏳ Đang thử kết nối lại...');
     });
 
     connection.onclose(() => {
       setIsConnected(false);
+      setConnectionStatus('disconnected');
+      console.warn('[SignalR Cart] ❌ Đã ngắt kết nối với máy chủ');
     });
 
     // Start connection
+    setConnectionStatus('connecting');
     connection
       .start()
       .then(() => {
         setIsConnected(true);
+        setConnectionStatus('connected');
+        console.log('[SignalR Cart] 🚀 Kết nối SignalR thành công!');
         return connection.invoke('JoinCartSession', tenantId);
       })
       .catch(err => {
-        console.warn('[CartSync] Connection failed:', err);
+        console.warn('[SignalR Cart] ❌ Không thể kết nối tới Hub /hubs/cart:', err);
         setIsConnected(false);
+        setConnectionStatus('disconnected');
       });
 
     return () => {
       connection.stop().catch(() => {});
       connectionRef.current = null;
       setIsConnected(false);
+      setConnectionStatus('disconnected');
     };
   }, [tenantId, getHubUrl, setCart]);
 
@@ -153,5 +164,5 @@ export function useCartSync({ tenantId, cart, setCart }: UseCartSyncOptions) {
     broadcastCart(cart);
   }, [cart, broadcastCart]);
 
-  return { isConnected, syncDevices };
+  return { isConnected, connectionStatus };
 }
